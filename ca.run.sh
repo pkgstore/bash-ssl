@@ -14,6 +14,7 @@
 
 CA_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd -P )"
 cat="$( command -v cat )"
+chmod="$( command -v chmod )"
 cp="$( command -v cp )"
 mkdir="$( command -v mkdir )"
 ossl="$( command -v openssl )"
@@ -161,18 +162,20 @@ EOF
 
   # Creating a structure.
   ${mkdir} -p "${CA_DIR}"/ca.root/{certs,certs.new,crl,csr,private} \
+    && ${chmod} 700 "${CA_DIR}/ca.root/private" \
     && ${touch} "${CA_DIR}/ca.root/index.txt" \
     && echo '1000' > "${CA_DIR}/ca.root/serial"
 
   # Generating a private key.
-  ${ossl} ecparam -genkey -name 'secp384r1' \
-    | ${ossl} ec -aes256 -out "${CA_DIR}/ca.root/private/ca.root.key"
+  ${ossl} ecparam -genkey -name 'secp384r1' | ${ossl} ec -aes256 -out "${CA_DIR}/ca.root/private/ca.root.key" \
+    && ${chmod} 400 "${CA_DIR}/ca.root/private/ca.root.key"
 
   # Generating a public certificate.
   ${ossl} req -config "${CA_DIR}/ca.root.ini" -extensions 'v3_ca' \
     -new -x509 -days 7310 -sha384 \
     -key "${CA_DIR}/ca.root/private/ca.root.key" \
-    -out "${CA_DIR}/ca.root/certs/ca.root.crt"
+    -out "${CA_DIR}/ca.root/certs/ca.root.crt" \
+    && ${chmod} 444 "${CA_DIR}/ca.root/certs/ca.root.crt"
 
   # Generating public certificate info on the display.
   ${ossl} x509 -noout -text \
@@ -193,15 +196,18 @@ init_ca() {
   ${cp} "${CA_DIR}/ca.root.ini" "${CA_DIR}/ca.ini"
   ${sed} -i '' 's/ca.root/ca/g' "${CA_DIR}/ca.ini"
   ${sed} -i '' 's/Root CA/Intermediate CA/g' "${CA_DIR}/ca.ini"
+  ${sed} -i '' 's/= policy_match/= policy_anything/g' "${CA_DIR}/ca.ini"
 
   # Creating a structure.
   ${mkdir} -p "${CA_DIR}"/ca/{certs,certs.new,crl,csr,private} \
+    && ${chmod} 700 "${CA_DIR}/ca/private" \
     && ${touch} "${CA_DIR}/ca/index.txt" \
-    && echo '1000' > "${CA_DIR}/ca/serial"
+    && echo '1000' > "${CA_DIR}/ca/serial" \
+    && echo '1000' > "${CA_DIR}/ca/crlnumber"
 
   # Generating a private key.
-  ${ossl} ecparam -genkey -name 'secp384r1' \
-    | ${ossl} ec -aes256 -out "${CA_DIR}/ca/private/ca.key"
+  ${ossl} ecparam -genkey -name 'secp384r1' | ${ossl} ec -aes256 -out "${CA_DIR}/ca/private/ca.key" \
+    && ${chmod} 400 "${CA_DIR}/ca/private/ca.key"
 
   # Generating a Certificate Signing Request (CSR).
   ${ossl} req -config "${CA_DIR}/ca.ini" \
@@ -213,7 +219,8 @@ init_ca() {
   ${ossl} ca -config "${CA_DIR}/ca.root.ini" -extensions 'v3_int_ca' \
     -days 3650 -notext -md 'sha384' \
     -in "${CA_DIR}/ca/csr/ca.csr" \
-    -out "${CA_DIR}/ca/certs/ca.crt"
+    -out "${CA_DIR}/ca/certs/ca.crt" \
+    && ${chmod} 444 "${CA_DIR}/ca/certs/ca.crt"
 
   # Generating public certificate info on the display.
   ${ossl} x509 -noout -text \
@@ -231,7 +238,8 @@ init_ca() {
 
   # Generating a public certificate chain file.
   ${cat} "${CA_DIR}/ca/certs/ca.crt" "${CA_DIR}/ca.root/certs/ca.root.crt" \
-    > "${CA_DIR}/ca/certs/ca.crt.chain"
+    > "${CA_DIR}/ca/certs/ca.crt.chain" \
+    && ${chmod} 444 "${CA_DIR}/ca/certs/ca.crt.chain"
 }
 
 # -------------------------------------------------------------------------------------------------------------------- #
@@ -243,8 +251,8 @@ gen_crt_srv() {
   days="${2:-740}"
 
   # Generating a private key.
-  ${ossl} ecparam -genkey -name 'secp384r1' \
-    | ${ossl} ec -out "${CA_DIR}/ca/private/${name}.key"
+  ${ossl} ecparam -genkey -name 'secp384r1' | ${ossl} ec -out "${CA_DIR}/ca/private/${name}.key" \
+    && ${chmod} 400 "${CA_DIR}/ca/private/${name}.key"
 
   # Generating a Certificate Signing Request (CSR).
   ${ossl} req -config "${CA_DIR}/ca.ini" \
@@ -256,7 +264,8 @@ gen_crt_srv() {
   ${ossl} ca -config "${CA_DIR}/ca.ini" -extensions 'srv_cert' \
     -days "${days}" -notext \
     -in "${CA_DIR}/ca/csr/${name}.csr" \
-    -out "${CA_DIR}/ca/certs/${name}.crt"
+    -out "${CA_DIR}/ca/certs/${name}.crt" \
+    && ${chmod} 444 "${CA_DIR}/ca/certs/${name}.crt"
 
   # Generating public certificate info on the display.
   ${ossl} x509 -noout -text \
@@ -282,8 +291,7 @@ gen_crt_usr() {
   days="${2:-740}"
 
   # Generating a private key.
-  ${ossl} ecparam -genkey -name 'secp384r1' \
-    | ${ossl} ec -out "${CA_DIR}/ca/private/${name}.key"
+  ${ossl} ecparam -genkey -name 'secp384r1' | ${ossl} ec -out "${CA_DIR}/ca/private/${name}.key"
 
   # Generating a Certificate Signing Request (CSR).
   ${ossl} req -config "${CA_DIR}/ca.ini" \
