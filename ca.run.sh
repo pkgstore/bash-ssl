@@ -107,8 +107,8 @@ emailAddress                    = Email Address
 countryName_default             = RU
 stateOrProvinceName_default     = Moscow
 localityName_default            = Moscow
-0.organizationName_default      = iHUB Inc.
-organizationalUnitName_default  = iHUB Root CA
+0.organizationName_default      = iHub Inc.
+organizationalUnitName_default  = iHub Root CA
 emailAddress_default            = mail@ihub.to
 
 [ v3_ca ]
