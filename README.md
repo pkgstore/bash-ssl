@@ -9,7 +9,7 @@
 ### Синтаксис
 
 ```
-bash ca.run.sh init_ca_root
+bash app.ca.sh init_ca_root
 ```
 
 ### Структура
@@ -32,7 +32,7 @@ ca.root/
 ### Синтаксис
 
 ```
-bash ca.run.sh init_ca
+bash app.ca.sh init_ca
 ```
 
 ### Структура
@@ -55,7 +55,7 @@ ca/
 ### Синтаксис
 
 ```
-bash ca.run.sh gen_crt_srv '[CERT_FILE_NAME]'
+bash app.ca.sh gen_crt_srv '[CERT_FILE_NAME]'
 ```
 
 ## OpenSSL User Certificate
@@ -65,5 +65,5 @@ bash ca.run.sh gen_crt_srv '[CERT_FILE_NAME]'
 ### Синтаксис
 
 ```
-bash ca.run.sh gen_crt_usr '[CERT_FILE_NAME]'
+bash app.ca.sh gen_crt_usr '[CERT_FILE_NAME]'
 ```
