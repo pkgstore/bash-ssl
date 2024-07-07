@@ -107,9 +107,9 @@ emailAddress                    = Email Address
 countryName_default             = RU
 stateOrProvinceName_default     = Moscow
 localityName_default            = Moscow
-0.organizationName_default      = iHub Inc.
-organizationalUnitName_default  = iHub Root CA
-emailAddress_default            = mail@ihub.to
+0.organizationName_default      = LocalHost
+organizationalUnitName_default  = LocalHost Root CA
+emailAddress_default            = mail@localhost
 
 [ v3_ca ]
 # Extensions for a typical CA (\`man x509v3_config\`).
@@ -161,16 +161,19 @@ extendedKeyUsage                = critical, OCSPSigning
 EOF
 
   # Creating a structure.
+  echo '' && echo '--- [SSL-CA-ROOT] CREATING A STRUCTURE' && echo ''
   ${mkdir} -p "${CA_DIR}"/ca.root/{certs,certs.new,crl,csr,private} \
     && ${chmod} 700 "${CA_DIR}/ca.root/private" \
     && ${touch} "${CA_DIR}/ca.root/index.txt" \
     && echo '1000' > "${CA_DIR}/ca.root/serial"
 
   # Generating a private key.
+  echo '' && echo '--- [SSL-CA-ROOT] GENERATING A PRIVATE KEY' && echo ''
   ${openssl} ecparam -genkey -name 'secp384r1' | ${openssl} ec -aes256 -out "${CA_DIR}/ca.root/private/ca.root.key" \
     && ${chmod} 400 "${CA_DIR}/ca.root/private/ca.root.key"
 
   # Generating a public certificate.
+  echo '' && echo '--- [SSL-CA-ROOT] GENERATING A PUBLIC CERTIFICATE' && echo ''
   ${openssl} req -config "${CA_DIR}/ca.root.ini" -extensions 'v3_ca' -new -x509 -days 7310 -sha384 \
     -key "${CA_DIR}/ca.root/private/ca.root.key" \
     -out "${CA_DIR}/ca.root/certs/ca.root.crt" \
@@ -192,12 +195,14 @@ EOF
 
 init_ca() {
   # Generating a configuration file.
+  echo '' && echo '--- [SSL-CA] Generating a configuration file' && echo ''
   ${cp} "${CA_DIR}/ca.root.ini" "${CA_DIR}/ca.ini"
   ${sed} -i 's|ca.root|ca|g' "${CA_DIR}/ca.ini"
   ${sed} -i 's|Root CA|Intermediate CA|g' "${CA_DIR}/ca.ini"
   ${sed} -i 's|= policy_match|= policy_anything|g' "${CA_DIR}/ca.ini"
 
   # Creating a structure.
+  echo '' && echo '--- [SSL-CA] CREATING A STRUCTURE' && echo ''
   ${mkdir} -p "${CA_DIR}"/ca/{certs,certs.new,crl,csr,private} \
     && ${chmod} 700 "${CA_DIR}/ca/private" \
     && ${touch} "${CA_DIR}/ca/index.txt" \
@@ -205,15 +210,18 @@ init_ca() {
     && echo '1000' > "${CA_DIR}/ca/crlnumber"
 
   # Generating a private key.
+  echo '' && echo '--- [SSL-CA] GENERATING A PRIVATE KEY' && echo ''
   ${openssl} ecparam -genkey -name 'secp384r1' | ${openssl} ec -aes256 -out "${CA_DIR}/ca/private/ca.key" \
     && ${chmod} 400 "${CA_DIR}/ca/private/ca.key"
 
   # Generating a Certificate Signing Request (CSR).
+  echo '' && echo '--- [SSL-CA] GENERATING A CERTIFICATE SIGNING REQUEST (CSR)' && echo ''
   ${openssl} req -config "${CA_DIR}/ca.ini" -new \
     -key "${CA_DIR}/ca/private/ca.key" \
     -out "${CA_DIR}/ca/csr/ca.csr"
 
   # Generating a public certificate.
+  echo '' && echo '--- [SSL-CA] GENERATING A PUBLIC CERTIFICATE' && echo ''
   ${openssl} ca -config "${CA_DIR}/ca.root.ini" -extensions 'v3_int_ca' -days 3650 -notext -md 'sha384' \
     -in "${CA_DIR}/ca/csr/ca.csr" \
     -out "${CA_DIR}/ca/certs/ca.crt" \
