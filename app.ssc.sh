@@ -4,7 +4,6 @@
 # -------------------------------------------------------------------------------------------------------------------- #
 # @package    Bash
 # @author     Kai Kimera <mail@kai.kim>
-# @copyright  2024 Library Online
 # @license    MIT
 # @version    0.1.0
 # @link       https://lib.onl/ru/2023/10/6733cb51-62a0-5ed9-b421-8f08c4e0cb18/
