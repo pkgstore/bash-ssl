@@ -1,7 +1,7 @@
-#!/usr/bin/env -S bash -e
-#
-# Generating OpenSSL CA.
-#
+#!/usr/bin/env -S bash -euo pipefail
+# -------------------------------------------------------------------------------------------------------------------- #
+# OPENSSL CA
+# -------------------------------------------------------------------------------------------------------------------- #
 # @package    Bash
 # @author     Kai Kimera <mail@kai.kim>
 # @copyright  2024 iHub TO
@@ -12,22 +12,20 @@
 
 (( EUID == 0 )) && { echo >&2 'This script should not be run as root!'; exit 1; }
 
+# Variables.
 CA_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd -P )"
-cat="$( command -v cat )"
-chmod="$( command -v chmod )"
-cp="$( command -v cp )"
-mkdir="$( command -v mkdir )"
-openssl="$( command -v openssl )"
-sed="$( command -v sed )"
-touch="$( command -v touch )"
 
 # -------------------------------------------------------------------------------------------------------------------- #
-# INITIALIZING CA-ROOT.
+# -----------------------------------------------------< SCRIPT >----------------------------------------------------- #
 # -------------------------------------------------------------------------------------------------------------------- #
 
-init_ca_root() {
+function _title() {
+  echo '' && echo "${1}" && echo ''
+}
+
+function init_ca_root() {
   # Generating a configuration file.
-  ${cat} > "${CA_DIR}/ca.root.ini" <<EOF
+  cat > "${CA_DIR}/ca.root.ini" <<EOF
 [ ca ]
 default_ca                      = CA_default
 
@@ -161,196 +159,152 @@ extendedKeyUsage                = critical, OCSPSigning
 EOF
 
   # Creating a structure.
-  echo '' && echo '--- [SSL-CA-ROOT] CREATING A STRUCTURE' && echo ''
-  ${mkdir} -p "${CA_DIR}"/ca.root/{certs,certs.new,crl,csr,private} \
-    && ${chmod} 700 "${CA_DIR}/ca.root/private" \
-    && ${touch} "${CA_DIR}/ca.root/index.txt" \
+  _title '--- [SSL-CA-ROOT] CREATING A STRUCTURE'
+  mkdir -p "${CA_DIR}"/ca.root/{certs,certs.new,crl,csr,private} \
+    && chmod 700 "${CA_DIR}/ca.root/private" \
+    && touch "${CA_DIR}/ca.root/index.txt" \
     && echo '1000' > "${CA_DIR}/ca.root/serial"
 
   # Generating a private key.
-  echo '' && echo '--- [SSL-CA-ROOT] GENERATING A PRIVATE KEY' && echo ''
-  ${openssl} ecparam -genkey -name 'secp384r1' | ${openssl} ec -aes256 -out "${CA_DIR}/ca.root/private/ca.root.key" \
-    && ${chmod} 400 "${CA_DIR}/ca.root/private/ca.root.key"
+  _title '--- [SSL-CA-ROOT] GENERATING A PRIVATE KEY'
+  openssl ecparam -genkey -name 'secp384r1' | openssl ec -aes256 -out "${CA_DIR}/ca.root/private/ca.root.key" \
+    && chmod 400 "${CA_DIR}/ca.root/private/ca.root.key"
 
   # Generating a public certificate.
-  echo '' && echo '--- [SSL-CA-ROOT] GENERATING A PUBLIC CERTIFICATE' && echo ''
-  ${openssl} req -config "${CA_DIR}/ca.root.ini" -extensions 'v3_ca' -new -x509 -days 7310 -sha384 \
+  _title '--- [SSL-CA-ROOT] GENERATING A PUBLIC CERTIFICATE'
+  openssl req -config "${CA_DIR}/ca.root.ini" -extensions 'v3_ca' -new -x509 -days 7310 -sha384 \
     -key "${CA_DIR}/ca.root/private/ca.root.key" \
     -out "${CA_DIR}/ca.root/certs/ca.root.crt" \
-    && ${chmod} 444 "${CA_DIR}/ca.root/certs/ca.root.crt"
+    && chmod 444 "${CA_DIR}/ca.root/certs/ca.root.crt"
 
   # Generating public certificate info on the display.
-  ${openssl} x509 -noout -text \
-    -in "${CA_DIR}/ca.root/certs/ca.root.crt"
+  openssl x509 -noout -text -in "${CA_DIR}/ca.root/certs/ca.root.crt"
 
   # Generating public certificate info to the file.
-  ${openssl} x509 -noout -text \
-    -in "${CA_DIR}/ca.root/certs/ca.root.crt" \
-    > "${CA_DIR}/ca.root/certs/ca.root.crt.info"
+  openssl x509 -noout -text -in "${CA_DIR}/ca.root/certs/ca.root.crt" > "${CA_DIR}/ca.root/certs/ca.root.crt.info"
 }
 
-# -------------------------------------------------------------------------------------------------------------------- #
-# INITIALIZING CA-INTERMEDIATE.
-# -------------------------------------------------------------------------------------------------------------------- #
-
-init_ca() {
+function init_ca() {
   # Generating a configuration file.
-  echo '' && echo '--- [SSL-CA] Generating a configuration file' && echo ''
-  ${cp} "${CA_DIR}/ca.root.ini" "${CA_DIR}/ca.ini"
-  ${sed} -i 's|ca.root|ca|g' "${CA_DIR}/ca.ini"
-  ${sed} -i 's|Root CA|Intermediate CA|g' "${CA_DIR}/ca.ini"
-  ${sed} -i 's|= policy_match|= policy_anything|g' "${CA_DIR}/ca.ini"
+  _title '--- [SSL-CA] GENERATING A CONFIGURATION FILE'
+  cp "${CA_DIR}/ca.root.ini" "${CA_DIR}/ca.ini"
+  sed -i \
+    -e 's|ca.root|ca|g' \
+    -e 's|Root CA|Intermediate CA|g' \
+    -e 's|= policy_match|= policy_anything|g' "${CA_DIR}/ca.ini"
 
   # Creating a structure.
-  echo '' && echo '--- [SSL-CA] CREATING A STRUCTURE' && echo ''
-  ${mkdir} -p "${CA_DIR}"/ca/{certs,certs.new,crl,csr,private} \
-    && ${chmod} 700 "${CA_DIR}/ca/private" \
-    && ${touch} "${CA_DIR}/ca/index.txt" \
+  _title '--- [SSL-CA] CREATING A STRUCTURE'
+  mkdir -p "${CA_DIR}"/ca/{certs,certs.new,crl,csr,private} \
+    && chmod 700 "${CA_DIR}/ca/private" \
+    && touch "${CA_DIR}/ca/index.txt" \
     && echo '1000' > "${CA_DIR}/ca/serial" \
     && echo '1000' > "${CA_DIR}/ca/crlnumber"
 
   # Generating a private key.
-  echo '' && echo '--- [SSL-CA] GENERATING A PRIVATE KEY' && echo ''
-  ${openssl} ecparam -genkey -name 'secp384r1' | ${openssl} ec -aes256 -out "${CA_DIR}/ca/private/ca.key" \
-    && ${chmod} 400 "${CA_DIR}/ca/private/ca.key"
+  _title '--- [SSL-CA] GENERATING A PRIVATE KEY'
+  openssl ecparam -genkey -name 'secp384r1' | openssl ec -aes256 -out "${CA_DIR}/ca/private/ca.key" \
+    && chmod 400 "${CA_DIR}/ca/private/ca.key"
 
   # Generating a Certificate Signing Request (CSR).
-  echo '' && echo '--- [SSL-CA] GENERATING A CERTIFICATE SIGNING REQUEST (CSR)' && echo ''
-  ${openssl} req -config "${CA_DIR}/ca.ini" -new \
-    -key "${CA_DIR}/ca/private/ca.key" \
-    -out "${CA_DIR}/ca/csr/ca.csr"
+  _title '--- [SSL-CA] GENERATING A CERTIFICATE SIGNING REQUEST (CSR)'
+  openssl req -config "${CA_DIR}/ca.ini" -new -key "${CA_DIR}/ca/private/ca.key" -out "${CA_DIR}/ca/csr/ca.csr"
 
   # Generating a public certificate.
-  echo '' && echo '--- [SSL-CA] GENERATING A PUBLIC CERTIFICATE' && echo ''
-  ${openssl} ca -config "${CA_DIR}/ca.root.ini" -extensions 'v3_int_ca' -days 3650 -notext -md 'sha384' \
+  _title '--- [SSL-CA] GENERATING A PUBLIC CERTIFICATE'
+  openssl ca -config "${CA_DIR}/ca.root.ini" -extensions 'v3_int_ca' -days 3650 -notext -md 'sha384' \
     -in "${CA_DIR}/ca/csr/ca.csr" \
     -out "${CA_DIR}/ca/certs/ca.crt" \
-    && ${chmod} 444 "${CA_DIR}/ca/certs/ca.crt"
+    && chmod 444 "${CA_DIR}/ca/certs/ca.crt"
 
   # Generating public certificate info on the display.
-  ${openssl} x509 -noout -text \
-    -in "${CA_DIR}/ca/certs/ca.crt"
+  openssl x509 -noout -text -in "${CA_DIR}/ca/certs/ca.crt"
 
   # Generating public certificate info to the file.
-  ${openssl} x509 -noout -text \
-    -in "${CA_DIR}/ca/certs/ca.crt" \
-    > "${CA_DIR}/ca/certs/ca.crt.info"
+  openssl x509 -noout -text -in "${CA_DIR}/ca/certs/ca.crt" > "${CA_DIR}/ca/certs/ca.crt.info"
 
   # Verifying the public certificate on the display.
-  ${openssl} verify \
-    -CAfile "${CA_DIR}/ca.root/certs/ca.root.crt" \
-    "${CA_DIR}/ca/certs/ca.crt"
+  openssl verify -CAfile "${CA_DIR}/ca.root/certs/ca.root.crt" "${CA_DIR}/ca/certs/ca.crt"
 
   # Generating a public certificate chain file.
-  ${cat} "${CA_DIR}/ca/certs/ca.crt" "${CA_DIR}/ca.root/certs/ca.root.crt" \
-    > "${CA_DIR}/ca/certs/ca.crt.chain" \
-    && ${chmod} 444 "${CA_DIR}/ca/certs/ca.crt.chain"
+  cat "${CA_DIR}/ca/certs/ca.crt" "${CA_DIR}/ca.root/certs/ca.root.crt" > "${CA_DIR}/ca/certs/ca.crt.chain" \
+    && chmod 444 "${CA_DIR}/ca/certs/ca.crt.chain"
 }
 
-# -------------------------------------------------------------------------------------------------------------------- #
-# GENERATING A SERVER CERTIFICATE.
-# -------------------------------------------------------------------------------------------------------------------- #
-
-gen_crt_srv() {
-  name="${1}"
-  days="${2:-740}"
+function gen_crt_srv() {
+  local name; name="${1}"
+  local days; days="${2:-740}"
 
   # Generating a private key.
-  ${openssl} ecparam -genkey -name 'secp384r1' | ${openssl} ec -out "${CA_DIR}/ca/private/${name}.key" \
-    && ${chmod} 400 "${CA_DIR}/ca/private/${name}.key"
+  openssl ecparam -genkey -name 'secp384r1' | openssl ec -out "${CA_DIR}/ca/private/${name}.key" \
+    && chmod 400 "${CA_DIR}/ca/private/${name}.key"
 
   # Generating a Certificate Signing Request (CSR).
-  ${openssl} req -config "${CA_DIR}/ca.ini" -new \
+  openssl req -config "${CA_DIR}/ca.ini" -new \
     -key "${CA_DIR}/ca/private/${name}.key" \
     -out "${CA_DIR}/ca/csr/${name}.csr"
 
   # Generating a public certificate.
-  ${openssl} ca -config "${CA_DIR}/ca.ini" -extensions 'srv_cert' -days "${days}" -notext \
+  openssl ca -config "${CA_DIR}/ca.ini" -extensions 'srv_cert' -days "${days}" -notext \
     -in "${CA_DIR}/ca/csr/${name}.csr" \
     -out "${CA_DIR}/ca/certs/${name}.crt" \
-    && ${chmod} 444 "${CA_DIR}/ca/certs/${name}.crt"
+    && chmod 444 "${CA_DIR}/ca/certs/${name}.crt"
 
   # Generating public certificate info on the display.
-  ${openssl} x509 -noout -text \
-    -in "${CA_DIR}/ca/certs/${name}.crt"
+  openssl x509 -noout -text -in "${CA_DIR}/ca/certs/${name}.crt"
 
   # Generating public certificate info to the file.
-  ${openssl} x509 -noout -text \
-    -in "${CA_DIR}/ca/certs/${name}.crt" \
-    > "${CA_DIR}/ca/certs/${name}.crt.info"
+  openssl x509 -noout -text -in "${CA_DIR}/ca/certs/${name}.crt" > "${CA_DIR}/ca/certs/${name}.crt.info"
 
   # Verifying the public certificate on the display.
-  ${openssl} verify \
-    -CAfile "${CA_DIR}/ca/certs/ca.crt.chain" \
-    "${CA_DIR}/ca/certs/${name}.crt"
+  openssl verify -CAfile "${CA_DIR}/ca/certs/ca.crt.chain" "${CA_DIR}/ca/certs/${name}.crt"
 }
 
-# -------------------------------------------------------------------------------------------------------------------- #
-# GENERATING A USER CERTIFICATE.
-# -------------------------------------------------------------------------------------------------------------------- #
-
-gen_crt_usr() {
-  name="${1}"
-  days="${2:-740}"
+function gen_crt_usr() {
+  local name; name="${1}"
+  local days; days="${2:-740}"
 
   # Generating a private key.
-  ${openssl} ecparam -genkey -name 'secp384r1' | ${openssl} ec -out "${CA_DIR}/ca/private/${name}.key"
+  openssl ecparam -genkey -name 'secp384r1' | openssl ec -out "${CA_DIR}/ca/private/${name}.key"
 
   # Generating a Certificate Signing Request (CSR).
-  ${openssl} req -config "${CA_DIR}/ca.ini" -new \
+  openssl req -config "${CA_DIR}/ca.ini" -new \
     -key "${CA_DIR}/ca/private/${name}.key" \
     -out "${CA_DIR}/ca/csr/${name}.csr"
 
   # Generating a public certificate.
-  ${openssl} ca -config "${CA_DIR}/ca.ini" -extensions 'usr_cert' -days "${days}" -notext \
+  openssl ca -config "${CA_DIR}/ca.ini" -extensions 'usr_cert' -days "${days}" -notext \
     -in "${CA_DIR}/ca/csr/${name}.csr" \
     -out "${CA_DIR}/ca/certs/${name}.crt"
 
   # Generating public certificate info on the display.
-  ${openssl} x509 -noout -text \
-    -in "${CA_DIR}/ca/certs/${name}.crt"
+  openssl x509 -noout -text -in "${CA_DIR}/ca/certs/${name}.crt"
 
   # Generating public certificate info to the file.
-  ${openssl} x509 -noout -text \
-    -in "${CA_DIR}/ca/certs/${name}.crt" \
-    > "${CA_DIR}/ca/certs/${name}.crt.info"
+  openssl x509 -noout -text -in "${CA_DIR}/ca/certs/${name}.crt" > "${CA_DIR}/ca/certs/${name}.crt.info"
 
   # Verifying the public certificate on the display.
-  ${openssl} verify \
-    -CAfile "${CA_DIR}/ca/certs/ca.crt.chain" \
-    "${CA_DIR}/ca/certs/${name}.crt"
+  openssl verify -CAfile "${CA_DIR}/ca/certs/ca.crt.chain" "${CA_DIR}/ca/certs/${name}.crt"
 }
 
-# -------------------------------------------------------------------------------------------------------------------- #
-# SIGNING THE SERVER CERTIFICATE.
-# -------------------------------------------------------------------------------------------------------------------- #
-
-sig_crt_srv(){
-  name="${1}"
-  days="${2:-740}"
+function sig_crt_srv() {
+  local name; name="${1}"
+  local days; days="${2:-740}"
 
   # Generating a public certificate.
-  ${openssl} ca -config "${CA_DIR}/ca.ini" -extensions 'srv_cert' -days "${days}" -notext \
+  openssl ca -config "${CA_DIR}/ca.ini" -extensions 'srv_cert' -days "${days}" -notext \
     -in "${name}" \
     -out "${CA_DIR}/ca/certs/${name}.crt"
 }
 
-# -------------------------------------------------------------------------------------------------------------------- #
-# SIGNING THE USER CERTIFICATE.
-# -------------------------------------------------------------------------------------------------------------------- #
-
-sig_crt_usr(){
-  name="${1}"
-  days="${2:-740}"
+function sig_crt_usr() {
+  local name; name="${1}"
+  local days; days="${2:-740}"
 
   # Generating a public certificate.
-  ${openssl} ca -config "${CA_DIR}/ca.ini" -extensions 'usr_cert' -days "${days}" -notext \
+  openssl ca -config "${CA_DIR}/ca.ini" -extensions 'usr_cert' -days "${days}" -notext \
     -in "${name}" \
     -out "${CA_DIR}/ca/certs/${name}.crt"
 }
-
-# -------------------------------------------------------------------------------------------------------------------- #
-# -------------------------------------------------< RUNNING SCRIPT >------------------------------------------------- #
-# -------------------------------------------------------------------------------------------------------------------- #
 
 "$@"
