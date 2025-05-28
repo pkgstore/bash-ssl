@@ -78,4 +78,6 @@ function gen() {
     && openssl x509 -in "${CN}.crt" -text -noout
 }
 
-function main() { gen; }; main "$@"
+function main() {
+  gen
+}; main "$@"
