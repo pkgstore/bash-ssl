@@ -44,7 +44,7 @@ SFX="$( shuf -i '1000-9999' -n 1 --random-source='/dev/random' )"
 # -----------------------------------------------------< SCRIPT >----------------------------------------------------- #
 # -------------------------------------------------------------------------------------------------------------------- #
 
-function _err() {
+function _error() {
   echo >&2 "[$( date '+%FT%H:%M:%S%z' )]: $*"; exit 1
 }
 
@@ -54,19 +54,19 @@ function _title() {
 
 function _verify() {
   _title '--- [SSL] CERTIFICATE VERIFICATION'
-  for i in "${1}" "${2}"; do [[ ! -f "${i}" ]] && _err "'${i}' not found!"; done
+  for i in "${1}" "${2}"; do [[ ! -f "${i}" ]] && _error "'${i}' not found!"; done
   openssl verify -CAfile "${1}" "${2}"
 }
 
 function _info() {
   _title '--- [SSL] CERTIFICATE DETAILS'
-  [[ ! -f "${1}" ]] && _err "'${i}' not found!"
+  [[ ! -f "${1}" ]] && _error "'${i}' not found!"
   openssl x509 -in "${1}" -text -noout
 }
 
 function _export() {
   _title '--- [SSL] EXPORTING A CERTIFICATE'
-  for i in "${1}" "${2}"; do [[ ! -f "${i}" ]] && _err "'${i}' not found!"; done
+  for i in "${1}" "${2}"; do [[ ! -f "${i}" ]] && _error "'${i}' not found!"; done
   openssl pkcs12 -export -inkey "${1}" -in "${2}" -out "${3}"
 }
 
