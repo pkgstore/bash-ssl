@@ -60,35 +60,39 @@ function _title() {
   echo '' && echo "${1}" && echo ''
 }
 
-function key() {
-  local type; type="${1}"
-
-  case "${type}" in
+function _key() {
+  case "${1}" in
     'ecc') openssl ecparam -genkey -name 'prime256v1' -out "${CN}.${1}.key" ;;
     'rsa') openssl genrsa -out "${CN}.${1}.key" 2048 ;;
     *) echo "'TYPE' does not exist!"; exit 1 ;;
   esac
 }
 
-function crt() {
+function _csr() {
+  openssl req -new -sha256 -key "${CN}.${1}.key" -out "${CN}.csr" \
+    -subj "/C=${COUNTRY}/ST=${STATE}/L=${CITY}/O=${ORG}/OU=${OU}/CN=${CN}/emailAddress=${EMAIL}" \
+    -addext "basicConstraints = critical, CA:${CA}" \
+    -addext 'nsCertType = server, client' \
+    -addext 'nsComment = OpenSSL Self-Signed Certificate' \
+    -addext "keyUsage = critical, ${KU}" \
+    -addext "extendedKeyUsage = ${EKU}" \
+    -addext "subjectAltName = ${SAN}"
+}
+
+function _crt() {
+  openssl x509 -req -sha256 -days "${DAYS}" -copy_extensions 'copyall' \
+    -key "${CN}.${1}.key" -in "${CN}.csr" -out "${CN}.${1}.crt"
+}
+
+function _txt() {
+  openssl x509 -in "${CN}.${1}.crt" -text -noout
+}
+
+function main() {
   local type; type=('ecc' 'rsa')
 
   for i in "${type[@]}"; do
     _title "--- [SSL:${i^^}] SELF SIGNED CERTIFICATE: '${CN}'"
-    key "${i}" && openssl req -new -sha256 -key "${CN}.${i}.key" -out "${CN}.csr" \
-      -subj "/C=${COUNTRY}/ST=${STATE}/L=${CITY}/O=${ORG}/OU=${OU}/CN=${CN}/emailAddress=${EMAIL}" \
-      -addext "basicConstraints = critical, CA:${CA}" \
-      -addext 'nsCertType = server, client' \
-      -addext 'nsComment = OpenSSL Self-Signed Certificate' \
-      -addext "keyUsage = critical, ${KU}" \
-      -addext "extendedKeyUsage = ${EKU}" \
-      -addext "subjectAltName = ${SAN}" \
-      && openssl x509 -req -sha256 -days "${DAYS}" -copy_extensions 'copyall' \
-      -key "${CN}.${i}.key" -in "${CN}.csr" -out "${CN}.${i}.crt" \
-      && openssl x509 -in "${CN}.${i}.crt" -text -noout
+    _key "${i}" && _csr "${i}" && _crt "${i}" && _txt "${i}"
   done
-}
-
-function main() {
-  crt
 }; main "$@"
