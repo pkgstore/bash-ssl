@@ -88,11 +88,15 @@ function _txt() {
   openssl x509 -in "${CN}.${1}.crt" -text -noout
 }
 
-function main() {
+function generator() {
   local type; type=('ecc' 'rsa')
 
   for i in "${type[@]}"; do
     _title "--- [SSL:${i^^}] SELF SIGNED CERTIFICATE: '${CN}'"
     _key "${i}" && _csr "${i}" && _crt "${i}" && _txt "${i}"
   done
+}
+
+function main() {
+  generator
 }; main "$@"
