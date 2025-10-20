@@ -84,7 +84,7 @@ function _crt() {
     -key "${CN}.${1}.key" -in "${CN}.csr" -out "${CN}.${1}.crt"
 }
 
-function _txt() {
+function _info() {
   openssl x509 -in "${CN}.${1}.crt" -text -noout
 }
 
@@ -93,7 +93,7 @@ function generator() {
 
   for i in "${type[@]}"; do
     _title "--- [SSL:${i^^}] SELF SIGNED CERTIFICATE: '${CN}'"
-    _key "${i}" && _csr "${i}" && _crt "${i}" && _txt "${i}"
+    _key "${i}" && _csr "${i}" && _crt "${i}" && _info "${i}"
   done
 }
 
