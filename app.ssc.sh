@@ -20,13 +20,13 @@
 DAYS='3650'
 
 # The two-letter country code where your company is legally located.
-COUNTRY='RU'
+COUNTRY='SC'
 
 # The state/province where your company is legally located.
-STATE='Russia'
+STATE='Seychelles'
 
 # The city where your company is legally located.
-CITY='Moscow'
+CITY='Victoria'
 
 # Your company's legally registered name (e.g., YourCompany, Inc.).
 ORG='LocalHost'
@@ -38,7 +38,7 @@ OU='IT Department'
 CN="${1:?}"
 
 # Your email address.
-EMAIL='mail@localhost'
+EMAIL='mail@example.org'
 
 # Additional subject identities.
 SAN="${2}"; [[ -z "${2}" ]] && SAN="DNS:${CN}, DNS:*.${CN}, DNS:*.localdomain, DNS:*.local, IP:127.0.0.1"
