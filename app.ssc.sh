@@ -62,7 +62,7 @@ function _title() {
 
 function _key() {
   case "${1}" in
-    'ecc') openssl ecparam -genkey -noout -name 'prime256v1' -out "${CN}.${1}.key" ;;
+    'ecc') openssl ecparam -noout -genkey -name 'prime256v1' -out "${CN}.${1}.key" ;;
     'rsa') openssl genrsa -out "${CN}.${1}.key" 2048 ;;
     *) echo "'TYPE' does not exist!"; exit 1 ;;
   esac
