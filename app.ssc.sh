@@ -23,7 +23,7 @@ DAYS='3650'
 COUNTRY='SC'
 
 # The state/province where your company is legally located.
-STATE='Seychelles'
+STATE='Victoria'
 
 # The city where your company is legally located.
 CITY='Victoria'
