@@ -1,6 +1,6 @@
 #!/usr/bin/env -S bash -euo pipefail
 # -------------------------------------------------------------------------------------------------------------------- #
-# OPENSSL SELF SIGNED CERTIFICATE GENERATOR
+# OPENSSL CA CERTIFICATE GENERATOR
 # -------------------------------------------------------------------------------------------------------------------- #
 # @package    Bash
 # @author     Kai Kimera <mail@kai.kim>
@@ -17,6 +17,8 @@
 
 # Sources.
 SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd -P )"
+
+# Parameters.
 CN="${1:?}"
 SAN="${2:?}"
 DAYS="${3:-3650}"
