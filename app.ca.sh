@@ -16,7 +16,7 @@
 # -------------------------------------------------------------------------------------------------------------------- #
 
 # Variables.
-CA_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd -P )"
+SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd -P )"
 
 # -------------------------------------------------------------------------------------------------------------------- #
 # -----------------------------------------------------< SCRIPT >----------------------------------------------------- #
@@ -28,74 +28,74 @@ function _title() {
 
 function _struct() {
   _title '--- [SSL-CA] CREATING A STRUCTURE'
-  mkdir -p "${CA_DIR}/${1}"/{certs,certs.new,crl,csr,private} \
-    && touch "${CA_DIR}/${1}/index.txt" \
-    && echo '1000' > "${CA_DIR}/${1}/serial" \
-    && echo '1000' > "${CA_DIR}/${1}/crlnumber"
+  mkdir -p "${SRC_DIR}/${1}"/{crt,crt.new,crl,csr,key} \
+    && touch "${SRC_DIR}/${1}/index.txt" \
+    && echo '1000' > "${SRC_DIR}/${1}/serial" \
+    && echo '1000' > "${SRC_DIR}/${1}/crlnumber"
 }
 
 function _key() {
   _title '--- [SSL] GENERATING A PRIVATE KEY'
-  openssl ecparam -genkey -name 'secp384r1' | openssl ec -aes256 -out "${CA_DIR}/${1}/private/${1}.key"
+  openssl ecparam -genkey -name 'secp384r1' | openssl ec -aes256 -out "${SRC_DIR}/${1}/key/${1}.key"
 }
 
 function _csr() {
   _title '--- [SSL] GENERATING A CERTIFICATE SIGNING REQUEST (CSR)'
-  openssl req -config "${CA_DIR}/${1}.ini" -new \
-  -key "${CA_DIR}/${1}/private/${1}.key" \
-  -out "${CA_DIR}/${1}/csr/${1}.csr"
+  openssl req -config "${SRC_DIR}/${1}.ini" -new \
+    -key "${SRC_DIR}/${1}/key/${1}.key" \
+    -out "${SRC_DIR}/${1}/csr/${1}.csr"
 }
 
 function _cert() {
   _title '--- [SSL] GENERATING A CERTIFICATE'
   case "${1}" in
     'ca.root')
-      openssl req -config "${CA_DIR}/${2}" -extensions "${3}" -new -x509 -days "${4}" \
-        -key "${CA_DIR}/${1}/private/${1}.key" \
-        -out "${CA_DIR}/${1}/certs/${1}.crt"
+      openssl req -config "${SRC_DIR}/${2}" -extensions "${3}" -new -x509 -days "${4}" \
+        -key "${SRC_DIR}/${1}/key/${1}.key" \
+        -out "${SRC_DIR}/${1}/crt/${1}.crt"
       ;;
     'ca')
-      openssl ca -config "${CA_DIR}/${2}" -extensions "${3}" -days "${4}" -notext \
-        -in "${CA_DIR}/${1}/csr/${1}.csr" \
-        -out "${CA_DIR}/${1}/certs/${1}.crt"
+      openssl ca -config "${SRC_DIR}/${2}" -extensions "${3}" -days "${4}" -notext \
+        -in "${SRC_DIR}/${1}/csr/${1}.csr" \
+        -out "${SRC_DIR}/${1}/crt/${1}.crt"
       ;;
     *) echo "'TYPE' does not exist!"; exit 1 ;;
   esac
 }
 
 function _verify() {
-  openssl verify -CAfile "${CA_DIR}/${1}/certs/${1}.crt" "${CA_DIR}/${2}/certs/${2}.crt"
+  openssl verify -CAfile "${SRC_DIR}/${1}/crt/${1}.crt" "${SRC_DIR}/${2}/crt/${2}.crt"
 }
 
 function _chain() {
-  cat "${CA_DIR}/${2}/certs/${2}.crt" "${CA_DIR}/${1}/certs/${1}.crt" \
-    > "${CA_DIR}/${2}/certs/${2}.crt.chain"
+  cat "${SRC_DIR}/${2}/crt/${2}.crt" "${SRC_DIR}/${1}/crt/${1}.crt" \
+    > "${SRC_DIR}/${2}/crt/${2}.crt.chain"
 }
 
 function _info() {
-  openssl x509 -noout -text -in "${CA_DIR}/${1}/certs/${1}.crt" \
-  && openssl x509 -noout -text -in "${CA_DIR}/${1}/certs/${1}.crt" > "${CA_DIR}/${1}/certs/${1}.crt.info"
+  openssl x509 -noout -text -in "${SRC_DIR}/${1}/crt/${1}.crt" \
+  && openssl x509 -noout -text -in "${SRC_DIR}/${1}/crt/${1}.crt" > "${SRC_DIR}/${1}/crt/${1}.crt.info"
 }
 
 function init_ca_root() {
-  cat > "${CA_DIR}/ca.root.ini" <<EOF
+  cat > "${SRC_DIR}/ca.root.ini" <<EOF
 [ ca ]
 default_ca                      = CA_default
 
 [ CA_default ]
 # Directory and file locations.
-dir                             = ${CA_DIR}/ca.root
-certs                           = \$dir/certs
+dir                             = ${SRC_DIR}/ca.root
+certs                           = \$dir/crt
 crl_dir                         = \$dir/crl
-new_certs_dir                   = \$dir/certs.new
+new_certs_dir                   = \$dir/crt.new
 database                        = \$dir/index.txt
 serial                          = \$dir/serial
-RANDFILE                        = \$dir/private/.rand
+RANDFILE                        = \$dir/key/.rand
 #copy_extensions = copy
 
 # The root key and root certificate.
-private_key                     = \$dir/private/ca.root.key
-certificate                     = \$dir/certs/ca.root.crt
+private_key                     = \$dir/key/ca.root.key
+certificate                     = \$dir/crt/ca.root.crt
 
 # For certificate revocation lists.
 crlnumber                       = \$dir/crlnumber
@@ -177,16 +177,25 @@ authorityKeyIdentifier          = keyid:always,issuer
 basicConstraints                = critical, CA:true, pathlen:0
 keyUsage                        = critical, digitalSignature, cRLSign, keyCertSign
 
-[ cert ]
+[ cert_user ]
 # Extensions for client certificates (\`man x509v3_config\`).
 basicConstraints                = CA:FALSE
-nsCertType                      = server, client
+nsCertType                      = client, email
 nsComment                       = "OpenSSL Generated Client Certificate"
 subjectKeyIdentifier            = hash
+authorityKeyIdentifier          = keyid,issuer
+keyUsage                        = critical, nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage                = clientAuth, emailProtection
+
+[ cert_server ]
+# Extensions for server certificates (\`man x509v3_config\`).
+basicConstraints                = CA:FALSE
+nsCertType                      = server
+nsComment                       = "OpenSSL Generated Server Certificate"
+subjectKeyIdentifier            = hash
 authorityKeyIdentifier          = keyid,issuer:always
-keyUsage                        = critical, digitalSignature, nonRepudiation, keyEncipherment
-extendedKeyUsage                = serverAuth, clientAuth
-# authorityInfoAccess           = OCSP;URI:http://ocsp.example.com
+keyUsage                        = critical, digitalSignature, keyEncipherment
+extendedKeyUsage                = serverAuth
 
 [ crl_ext ]
 # Extension for CRLs (\`man x509v3_config\`).
@@ -209,12 +218,12 @@ EOF
 
 function init_ca_intermediate() {
   _title '--- [SSL-CA] GENERATING A CONFIGURATION FILE'
-  cp "${CA_DIR}/ca.root.ini" "${CA_DIR}/ca.ini"
+  cp "${SRC_DIR}/ca.root.ini" "${SRC_DIR}/ca.ini"
   sed -i \
     -e 's|ca.root|ca|g' \
     -e 's|Root CA|Intermediate CA|g' \
     -e 's|= policy_strict|= policy_loose|g' \
-    -e 's|#copy_extensions =|copy_extensions =|g' "${CA_DIR}/ca.ini"
+    -e 's|#copy_extensions =|copy_extensions =|g' "${SRC_DIR}/ca.ini"
 
   _struct 'ca' \
   && _key 'ca' \
