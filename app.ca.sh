@@ -46,7 +46,7 @@ function _csr() {
     -out "${SRC_DIR}/${1}/csr/${1}.csr"
 }
 
-function _cert() {
+function _crt() {
   _title '--- [SSL] GENERATING A CERTIFICATE'
   case "${1}" in
     'ca.root')
@@ -69,7 +69,7 @@ function _verify() {
 
 function _chain() {
   cat "${SRC_DIR}/${2}/crt/${2}.crt" "${SRC_DIR}/${1}/crt/${1}.crt" \
-    > "${SRC_DIR}/${2}/crt/${2}.crt.chain"
+    > "${SRC_DIR}/${2}/crt/${2}.chain.crt"
 }
 
 function _info() {
@@ -212,7 +212,7 @@ EOF
 
   _struct 'ca.root' \
   && _key 'ca.root' \
-  && _cert 'ca.root' 'ca.root.ini' 'v3_ca_root' '7310' \
+  && _crt 'ca.root' 'ca.root.ini' 'v3_ca_root' '7310' \
   && _info 'ca.root'
 }
 
@@ -228,7 +228,7 @@ function init_ca_intermediate() {
   _struct 'ca' \
   && _key 'ca' \
   && _csr 'ca' 'ca' \
-  && _cert 'ca' 'ca.root.ini' 'v3_ca_intermediate' '3650' \
+  && _crt 'ca' 'ca.root.ini' 'v3_ca_intermediate' '3650' \
   && _verify 'ca.root' 'ca' \
   && _chain 'ca.root' 'ca' \
   && _info 'ca'

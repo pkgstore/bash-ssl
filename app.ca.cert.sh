@@ -48,13 +48,17 @@ function _crt() {
     -out "${SRC_DIR}/ca/crt/${CN}.crt"
 }
 
+function _verify() {
+  openssl verify -CAfile "${SRC_DIR}/ca/crt/ca.chain.crt" "${SRC_DIR}/ca/crt/${CN}.crt"
+}
+
 function _info() {
   openssl x509 -in "${SRC_DIR}/ca/crt/${CN}.crt" -text -noout
 }
 
 function generator() {
   _title "--- [SSL] SELF SIGNED CERTIFICATE: '${CN}'"
-  _key && _csr && _crt && _info
+  _key && _csr && _crt && _verify && _info
 }
 
 function main() {
