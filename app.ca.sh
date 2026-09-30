@@ -32,7 +32,7 @@ function _title() {
 }
 
 function _success() {
-  echo '' && echo -e "${G}Successfully completed!${NC}" >&2 && echo ''
+  echo '' && echo -e "${G}SUCCESSFULLY COMPLETED!${NC}" >&2 && echo ''
 }
 
 function _struct() {
@@ -90,8 +90,7 @@ function _chain() {
 function _info() {
   _title "--- [SSL-CA] INFORMATION"
   openssl x509 -noout -text -in "${SRC_DIR}/${1}/crt/${1}.crt" \
-    && openssl x509 -noout -text -in "${SRC_DIR}/${1}/crt/${1}.crt" > "${SRC_DIR}/${1}/crt/${1}.crt.info" \
-    && _success
+    && openssl x509 -noout -text -in "${SRC_DIR}/${1}/crt/${1}.crt" > "${SRC_DIR}/${1}/crt/${1}.crt.info"
 }
 
 function init_ca_00() {

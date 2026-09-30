@@ -40,7 +40,7 @@ function _title() {
 }
 
 function _success() {
-  echo '' && echo -e "${G}Successfully completed!${NC}" >&2 && echo ''
+  echo '' && echo -e "${G}SUCCESSFULLY COMPLETED!${NC}" >&2 && echo ''
 }
 
 function _key() {
