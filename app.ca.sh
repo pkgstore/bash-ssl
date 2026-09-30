@@ -18,6 +18,10 @@
 # Sources.
 SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd -P )"
 
+# CA names.
+CA_R='ca.00'
+CA_I='ca.01'
+
 # Colors.
 G='\033[0;32m'
 Y='\033[0;33m'
@@ -88,21 +92,19 @@ function _chain() {
 }
 
 function _info() {
-  _title "--- [SSL-CA] INFORMATION"
-  openssl x509 -noout -text -in "${SRC_DIR}/${1}/crt/${1}.crt" \
-    && openssl x509 -noout -text -in "${SRC_DIR}/${1}/crt/${1}.crt" > "${SRC_DIR}/${1}/crt/${1}.crt.info"
+  _title "--- [SSL-CA] GENERATING A INFO FILE"
+  openssl x509 -noout -text -in "${SRC_DIR}/${1}/crt/${1}.crt" > "${SRC_DIR}/${1}/crt/${1}.crt.info" \
+    && _success
 }
 
 function init_ca_00() {
-  local ca='ca.00'
-
-  cat > "${SRC_DIR}/${ca}.ini" <<EOF
+  cat > "${SRC_DIR}/${CA_R}.ini" <<EOF
 [ ca ]
 default_ca                      = CA_default
 
 [ CA_default ]
 # Directory and file locations.
-dir                             = ${SRC_DIR}/${ca}
+dir                             = ${SRC_DIR}/${CA_R}
 certs                           = \$dir/crt
 crl_dir                         = \$dir/crl
 new_certs_dir                   = \$dir/crt.new
@@ -112,12 +114,12 @@ RANDFILE                        = \$dir/key/.rand
 #copy_extensions = copy
 
 # The root key and root certificate.
-private_key                     = \$dir/key/${ca}.key
-certificate                     = \$dir/crt/${ca}.crt
+private_key                     = \$dir/key/${CA_R}.key
+certificate                     = \$dir/crt/${CA_R}.crt
 
 # For certificate revocation lists.
 crlnumber                       = \$dir/crlnumber
-crl                             = \$dir/${ca}.crl
+crl                             = \$dir/${CA_R}.crl
 crl_extensions                  = crl_ext
 default_crl_days                = 30
 
@@ -228,29 +230,27 @@ keyUsage                        = critical, digitalSignature
 extendedKeyUsage                = critical, OCSPSigning
 EOF
 
-  _struct "${ca}" \
-    && _key "${ca}" \
-    && _crt "${ca}" "${ca}.ini" 'v3_ca_00' '7310' \
-    && _info "${ca}"
+  _struct "${CA_R}" \
+    && _key "${CA_R}" \
+    && _crt "${CA_R}" "${CA_R}.ini" 'v3_ca_00' '7310' \
+    && _info "${CA_R}"
 }
 
 function init_ca_01() {
-  local ca_r='ca.00'; local ca_i='ca.01'
-
-  cp "${SRC_DIR}/${ca_r}.ini" "${SRC_DIR}/${ca_i}.ini"
+  cp "${SRC_DIR}/${CA_R}.ini" "${SRC_DIR}/${CA_I}.ini"
   sed -i \
-    -e "s|${ca_r}|${ca_i}|g" \
+    -e "s|${CA_R}|${CA_I}|g" \
     -e 's|Root CA|Intermediate CA|g' \
     -e 's|= policy_strict|= policy_loose|g' \
-    -e 's|#copy_extensions =|copy_extensions =|g' "${SRC_DIR}/${ca_i}.ini"
+    -e 's|#copy_extensions =|copy_extensions =|g' "${SRC_DIR}/${CA_I}.ini"
 
-  _struct "${ca_i}" \
-    && _key "${ca_i}" \
-    && _csr "${ca_i}" "${ca_i}" \
-    && _crt "${ca_i}" "${ca_r}.ini" 'v3_ca_01' '3650' \
-    && _verify "${ca_r}" "${ca_i}" \
-    && _chain "${ca_r}" "${ca_i}" \
-    && _info "${ca_i}"
+  _struct "${CA_I}" \
+    && _key "${CA_I}" \
+    && _csr "${CA_I}" "${CA_I}" \
+    && _crt "${CA_I}" "${CA_R}.ini" 'v3_ca_01' '3650' \
+    && _verify "${CA_R}" "${CA_I}" \
+    && _chain "${CA_R}" "${CA_I}" \
+    && _info "${CA_I}"
 }
 
 "$@"

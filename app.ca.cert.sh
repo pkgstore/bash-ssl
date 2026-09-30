@@ -23,6 +23,8 @@ CN="${1:?}"
 SAN="${2:?}"
 DAYS="${3:?}"
 EXT="${4:?}"
+
+# CA names.
 CA_R='ca.00'
 CA_I='ca.01'
 
@@ -70,8 +72,9 @@ function _verify() {
 }
 
 function _info() {
-  _title "--- [SSL] INFORMATION: '${CN}'"
-  openssl x509 -in "${SRC_DIR}/${CA_I}/crt/${CN}.crt" -text -noout
+  _title "--- [SSL] GENERATING A INFO FILE: '${CN}'"
+  openssl x509 -noout -text -in "${SRC_DIR}/${CA_I}/crt/${CN}.crt" > "${SRC_DIR}/${CA_I}/crt/${CN}.crt.info" \
+    && _success
 }
 
 function _pkcs() {
