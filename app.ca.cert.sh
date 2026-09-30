@@ -71,6 +71,13 @@ function _verify() {
     && _success
 }
 
+function _chain() {
+  _title "--- [SSL-CA] GENERATING A CHAIN FILE"
+  cat "${SRC_DIR}/${CA_I}/crt/${CN}.crt" "${SRC_DIR}/${CA_I}/crt/${CA_I}.chain.crt" \
+    > "${SRC_DIR}/${CA_I}/crt/${CN}.chain.crt" \
+    && _success
+}
+
 function _info() {
   _title "--- [SSL] GENERATING A INFO FILE: '${CN}'"
   openssl x509 -noout -text -in "${SRC_DIR}/${CA_I}/crt/${CN}.crt" > "${SRC_DIR}/${CA_I}/crt/${CN}.crt.info" \
@@ -80,7 +87,6 @@ function _info() {
 function _pkcs() {
   _title "--- [SSL] GENERATING A PFX FILE: '${CN}'"
   [[ ! -d "${SRC_DIR}/${CA_I}/pfx" ]] && mkdir "${SRC_DIR}/${CA_I}/pfx"
-
   openssl pkcs12 -export \
     -out "${SRC_DIR}/${CA_I}/pfx/${CN}.pfx" \
     -inkey "${SRC_DIR}/${CA_I}/key/${CN}.key" \
@@ -91,7 +97,13 @@ function _pkcs() {
 }
 
 function generator() {
-  _key && _csr && _crt && _verify && _info && _pkcs
+  _key \
+    && _csr \
+    && _crt \
+    && _verify \
+    && _chain \
+    && _info \
+    && _pkcs
 }
 
 function main() {

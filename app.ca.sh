@@ -50,7 +50,8 @@ function _struct() {
 
 function _key() {
   _title "--- [SSL-CA] GENERATING A KEY FILE"
-  openssl ecparam -genkey -name 'secp384r1' | openssl ec -aes256 -out "${SRC_DIR}/${1}/key/${1}.key" && _success
+  openssl ecparam -genkey -name 'secp384r1' | openssl ec -aes256 -out "${SRC_DIR}/${1}/key/${1}.key" \
+    && _success
 }
 
 function _csr() {
@@ -65,14 +66,12 @@ function _crt() {
   case "${1}" in
     'ca.00')
       openssl req -config "${SRC_DIR}/${2}" -extensions "${3}" -new -x509 -days "${4}" \
-        -key "${SRC_DIR}/${1}/key/${1}.key" \
-        -out "${SRC_DIR}/${1}/crt/${1}.crt" \
+        -key "${SRC_DIR}/${1}/key/${1}.key" -out "${SRC_DIR}/${1}/crt/${1}.crt" \
         && _success
       ;;
     'ca.01')
       openssl ca -config "${SRC_DIR}/${2}" -extensions "${3}" -days "${4}" -notext \
-        -in "${SRC_DIR}/${1}/csr/${1}.csr" \
-        -out "${SRC_DIR}/${1}/crt/${1}.crt" \
+        -in "${SRC_DIR}/${1}/csr/${1}.csr" -out "${SRC_DIR}/${1}/crt/${1}.crt" \
         && _success
       ;;
     *) echo "'TYPE' does not exist!"; exit 1 ;;
@@ -237,12 +236,12 @@ EOF
 }
 
 function init_ca_01() {
-  cp "${SRC_DIR}/${CA_R}.ini" "${SRC_DIR}/${CA_I}.ini"
-  sed -i \
-    -e "s|${CA_R}|${CA_I}|g" \
-    -e 's|Root CA|Intermediate CA|g' \
-    -e 's|= policy_strict|= policy_loose|g' \
-    -e 's|#copy_extensions =|copy_extensions =|g' "${SRC_DIR}/${CA_I}.ini"
+  cp "${SRC_DIR}/${CA_R}.ini" "${SRC_DIR}/${CA_I}.ini" \
+    && sed -i \
+      -e "s|${CA_R}|${CA_I}|g" \
+      -e 's|Root CA|Intermediate CA|g' \
+      -e 's|= policy_strict|= policy_loose|g' \
+      -e 's|#copy_extensions =|copy_extensions =|g' "${SRC_DIR}/${CA_I}.ini"
 
   _struct "${CA_I}" \
     && _key "${CA_I}" \
