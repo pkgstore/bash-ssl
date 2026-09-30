@@ -196,14 +196,6 @@ authorityKeyIdentifier          = keyid:always,issuer
 basicConstraints                = critical, CA:true, pathlen:0
 keyUsage                        = critical, digitalSignature, cRLSign, keyCertSign
 
-[ cert_common ]
-# Extensions for common certificates (\`man x509v3_config\`).
-basicConstraints                = CA:FALSE
-subjectKeyIdentifier            = hash
-authorityKeyIdentifier          = keyid,issuer
-keyUsage                        = critical, digitalSignature, keyEncipherment
-extendedKeyUsage                = serverAuth, clientAuth
-
 [ cert_code ]
 # Extensions for code certificates (\`man x509v3_config\`).
 basicConstraints                = CA:FALSE
