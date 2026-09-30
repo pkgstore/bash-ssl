@@ -23,46 +23,67 @@ CN="${1:?}"
 SAN="${2:?}"
 DAYS="${3:?}"
 EXT="${4:?}"
-CA='ca.01'
+CA_R='ca.00'
+CA_I='ca.01'
+
+# Colors.
+G='\033[0;32m'
+Y='\033[0;33m'
+NC='\033[0m'
 
 # -------------------------------------------------------------------------------------------------------------------- #
 # -----------------------------------------------------< SCRIPT >----------------------------------------------------- #
 # -------------------------------------------------------------------------------------------------------------------- #
 
 function _title() {
-  echo '' && echo "${1}" && echo ''
+  echo '' && echo -e "${Y}${1}${NC}" && echo ''
+}
+
+function _success() {
+  echo -e "${G}Successfully completed!${NC}" >&2
 }
 
 function _key() {
-  openssl ecparam -genkey -name 'secp384r1' | openssl ec -out "${SRC_DIR}/${CA}/key/${CN}.key"
+  _title "--- [SSL] GENERATING A KEY FILE: '${CN}'"
+  openssl ecparam -genkey -name 'prime256v1' | openssl ec -out "${SRC_DIR}/${CA_I}/key/${CN}.key" && _success
 }
 
 function _csr() {
-  openssl req -config "${SRC_DIR}/${CA}.ini" -new -addext "subjectAltName = ${SAN}" \
-    -key "${SRC_DIR}/${CA}/key/${CA}.key" -out "${SRC_DIR}/${CA}/csr/${CN}.csr"
+  _title "--- [SSL] GENERATING A CSR FILE: '${CN}'"
+  openssl req -config "${SRC_DIR}/${CA_I}.ini" -new -addext "subjectAltName = ${SAN}" \
+    -key "${SRC_DIR}/${CA_I}/key/${CN}.key" -out "${SRC_DIR}/${CA_I}/csr/${CN}.csr" && _success
 }
 
 function _crt() {
-  openssl ca -config "${SRC_DIR}/${CA}.ini" -days "${DAYS}" -extensions "${EXT}" -notext \
-    -in "${SRC_DIR}/${CA}/csr/${CN}.csr" -out "${SRC_DIR}/${CA}/crt/${CN}.crt"
+  _title "--- [SSL] GENERATING A CRT FILE: '${CN}'"
+  openssl ca -config "${SRC_DIR}/${CA_I}.ini" -days "${DAYS}" -extensions "${EXT}" -notext \
+    -in "${SRC_DIR}/${CA_I}/csr/${CN}.csr" -out "${SRC_DIR}/${CA_I}/crt/${CN}.crt" && _success
 }
 
 function _verify() {
-  openssl verify -CAfile "${SRC_DIR}/${CA}/crt/${CA}.chain.crt" "${SRC_DIR}/${CA}/crt/${CN}.crt"
+  _title "--- [SSL] VERIFICATION: '${CN}'"
+  openssl verify -CAfile "${SRC_DIR}/${CA_I}/crt/${CA_I}.chain.crt" "${SRC_DIR}/${CA_I}/crt/${CN}.crt" && _success
 }
 
 function _info() {
-  openssl x509 -in "${SRC_DIR}/${CA}/crt/${CN}.crt" -text -noout
+  _title "--- [SSL] INFORMATION: '${CN}'"
+  openssl x509 -in "${SRC_DIR}/${CA_I}/crt/${CN}.crt" -text -noout
 }
 
 function _pkcs() {
-  openssl pkcs12 -export -certpbe PBE-SHA1-3DES -keypbe PBE-SHA1-3DES -nomac \
-    -inkey "${f}.key" -in "${f}.crt" -out "${f}.pfx"
+  _title "--- [SSL] GENERATING A PFX FILE: '${CN}'"
+  [[ ! -d "${SRC_DIR}/${CA_I}/pfx" ]] && mkdir "${SRC_DIR}/${CA_I}/pfx"
+
+  openssl pkcs12 -export \
+    -out "${SRC_DIR}/${CA_I}/pfx/${CN}.pfx" \
+    -inkey "${SRC_DIR}/${CA_I}/key/${CN}.key" \
+    -in "${SRC_DIR}/${CA_I}/crt/${CN}.crt" \
+    -certfile "${SRC_DIR}/${CA_I}/crt/${CA_I}.crt" \
+    -certfile "${SRC_DIR}/${CA_R}/crt/${CA_R}.crt" && _success
 }
 
 function generator() {
-  _title "--- [SSL] SELF SIGNED CERTIFICATE: '${CN}'"
-  _key && _csr && _crt && _verify && _info
+  _key && _csr && _crt && _verify && _info && _pkcs
 }
 
 function main() {
