@@ -51,6 +51,7 @@ function _success() {
 function _key() {
   _title "--- [SSL] GENERATING A KEY FILE: '${CN}'"
   openssl ecparam -genkey -name 'prime256v1' | openssl ec -out "${SRC_DIR}/${CA_I}/key/${CN}.key" \
+    && chmod 400 "${SRC_DIR}/${CA_I}/key/${CN}.key" \
     && _success
 }
 
@@ -65,6 +66,7 @@ function _crt() {
   _title "--- [SSL] GENERATING A CRT FILE: '${CN}'"
   openssl ca -config "${SRC_DIR}/${CA_I}.ini" -days "${DAYS}" -extensions "${EXT}" -notext \
     -in "${SRC_DIR}/${CA_I}/csr/${CN}.csr" -out "${SRC_DIR}/${CA_I}/crt/${CN}.crt" \
+    && chmod 444 "${SRC_DIR}/${CA_I}/crt/${CN}.crt" \
     && _success
 }
 
@@ -78,6 +80,7 @@ function _chain() {
   _title "--- [SSL-CA] GENERATING A CHAIN FILE"
   cat "${SRC_DIR}/${CA_I}/crt/${CN}.crt" "${SRC_DIR}/${CA_I}/crt/${CA_I}.chain.crt" \
     > "${SRC_DIR}/${CA_I}/crt/${CN}.chain.crt" \
+    && chmod 444 "${SRC_DIR}/${CA_I}/crt/${CN}.chain.crt" \
     && _success
 }
 
@@ -96,6 +99,7 @@ function _pkcs() {
     -in "${SRC_DIR}/${CA_I}/crt/${CN}.crt" \
     -certfile "${SRC_DIR}/${CA_I}/crt/${CA_I}.crt" \
     -certfile "${SRC_DIR}/${CA_R}/crt/${CA_R}.crt" \
+    && chmod 444 "${SRC_DIR}/${CA_I}/pfx/${CN}.pfx" \
     && _success
 }
 

@@ -41,7 +41,8 @@ function _success() {
 
 function _struct() {
   _title '--- [SSL-CA] CREATING A STRUCTURE'
-  mkdir -p "${SRC_DIR}/${1}"/{crt,crt.new,crl,csr,key} \
+  mkdir -p "${SRC_DIR}/${1}"/{crl,crt,crt.new,csr,key} \
+    && chmod 700 "${SRC_DIR}/${1}/key" \
     && touch "${SRC_DIR}/${1}/index.txt" \
     && echo '1000' > "${SRC_DIR}/${1}/serial" \
     && echo '1000' > "${SRC_DIR}/${1}/crlnumber" \
@@ -51,6 +52,7 @@ function _struct() {
 function _key() {
   _title "--- [SSL-CA] GENERATING A KEY FILE"
   openssl ecparam -genkey -name 'secp384r1' | openssl ec -aes256 -out "${SRC_DIR}/${1}/key/${1}.key" \
+    && chmod 400 "${SRC_DIR}/${1}/key/${1}.key" \
     && _success
 }
 
@@ -76,6 +78,7 @@ function _crt() {
       ;;
     *) echo "'TYPE' does not exist!"; exit 1 ;;
   esac
+  [[ -f "${SRC_DIR}/${1}/crt/${1}.crt" ]] && chmod 444 "${SRC_DIR}/${1}/crt/${1}.crt"
 }
 
 function _verify() {
@@ -87,6 +90,7 @@ function _verify() {
 function _chain() {
   _title "--- [SSL-CA] GENERATING A CHAIN FILE"
   cat "${SRC_DIR}/${2}/crt/${2}.crt" "${SRC_DIR}/${1}/crt/${1}.crt" > "${SRC_DIR}/${2}/crt/${2}.chain.crt" \
+    && chmod 444 "${SRC_DIR}/${2}/crt/${2}.chain.crt" \
     && _success
 }
 
