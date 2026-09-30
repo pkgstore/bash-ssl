@@ -42,19 +42,18 @@ function _key() {
 function _csr() {
   _title '--- [SSL] GENERATING A CERTIFICATE SIGNING REQUEST (CSR)'
   openssl req -config "${SRC_DIR}/${1}.ini" -new \
-    -key "${SRC_DIR}/${1}/key/${1}.key" \
-    -out "${SRC_DIR}/${1}/csr/${1}.csr"
+    -key "${SRC_DIR}/${1}/key/${1}.key" -out "${SRC_DIR}/${1}/csr/${1}.csr"
 }
 
 function _crt() {
   _title '--- [SSL] GENERATING A CERTIFICATE'
   case "${1}" in
-    'ca.root')
+    'ca.00')
       openssl req -config "${SRC_DIR}/${2}" -extensions "${3}" -new -x509 -days "${4}" \
         -key "${SRC_DIR}/${1}/key/${1}.key" \
         -out "${SRC_DIR}/${1}/crt/${1}.crt"
       ;;
-    'ca')
+    'ca.01')
       openssl ca -config "${SRC_DIR}/${2}" -extensions "${3}" -days "${4}" -notext \
         -in "${SRC_DIR}/${1}/csr/${1}.csr" \
         -out "${SRC_DIR}/${1}/crt/${1}.crt"
@@ -77,14 +76,16 @@ function _info() {
   && openssl x509 -noout -text -in "${SRC_DIR}/${1}/crt/${1}.crt" > "${SRC_DIR}/${1}/crt/${1}.crt.info"
 }
 
-function init_ca_root() {
-  cat > "${SRC_DIR}/ca.root.ini" <<EOF
+function init_ca_00() {
+  local ca='ca.00'
+
+  cat > "${SRC_DIR}/${ca}.ini" <<EOF
 [ ca ]
 default_ca                      = CA_default
 
 [ CA_default ]
 # Directory and file locations.
-dir                             = ${SRC_DIR}/ca.root
+dir                             = ${SRC_DIR}/${ca}
 certs                           = \$dir/crt
 crl_dir                         = \$dir/crl
 new_certs_dir                   = \$dir/crt.new
@@ -94,12 +95,12 @@ RANDFILE                        = \$dir/key/.rand
 #copy_extensions = copy
 
 # The root key and root certificate.
-private_key                     = \$dir/key/ca.root.key
-certificate                     = \$dir/crt/ca.root.crt
+private_key                     = \$dir/key/${ca}.key
+certificate                     = \$dir/crt/${ca}.crt
 
 # For certificate revocation lists.
 crlnumber                       = \$dir/crlnumber
-crl                             = \$dir/ca.root.crl
+crl                             = \$dir/${ca}.crl
 crl_extensions                  = crl_ext
 default_crl_days                = 30
 
@@ -143,7 +144,7 @@ string_mask                     = utf8only
 default_md                      = sha256
 
 # Extension to add when the -x509 option is used.
-x509_extensions                 = v3_ca_root
+x509_extensions                 = v3_ca_00
 
 [ req_distinguished_name ]
 # See <https://en.wikipedia.org/wiki/Certificate_signing_request>.
@@ -163,14 +164,14 @@ localityName_default            = Victoria
 organizationalUnitName_default  = LocalHost Root CA
 emailAddress_default            = mail@localhost
 
-[ v3_ca_root ]
+[ v3_ca_00 ]
 # Extensions for a typical CA (\`man x509v3_config\`).
 subjectKeyIdentifier            = hash
 authorityKeyIdentifier          = keyid:always,issuer
 basicConstraints                = critical, CA:true
 keyUsage                        = critical, digitalSignature, cRLSign, keyCertSign
 
-[ v3_ca_intermediate ]
+[ v3_ca_01 ]
 # Extensions for a typical intermediate CA (\`man x509v3_config\`).
 subjectKeyIdentifier            = hash
 authorityKeyIdentifier          = keyid:always,issuer
@@ -210,28 +211,30 @@ keyUsage                        = critical, digitalSignature
 extendedKeyUsage                = critical, OCSPSigning
 EOF
 
-  _struct 'ca.root' \
-  && _key 'ca.root' \
-  && _crt 'ca.root' 'ca.root.ini' 'v3_ca_root' '7310' \
-  && _info 'ca.root'
+  _struct "${ca}" \
+  && _key "${ca}" \
+  && _crt "${ca}" "${ca}.ini" 'v3_ca_00' '7310' \
+  && _info "${ca}"
 }
 
-function init_ca_intermediate() {
+function init_ca_01() {
+  local ca_r='ca.00'; local ca_i='ca.01'
+
   _title '--- [SSL-CA] GENERATING A CONFIGURATION FILE'
-  cp "${SRC_DIR}/ca.root.ini" "${SRC_DIR}/ca.ini"
+  cp "${SRC_DIR}/${ca_r}.ini" "${SRC_DIR}/${ca_i}.ini"
   sed -i \
-    -e 's|ca.root|ca|g' \
+    -e "s|${ca_r}|${ca_i}|g" \
     -e 's|Root CA|Intermediate CA|g' \
     -e 's|= policy_strict|= policy_loose|g' \
-    -e 's|#copy_extensions =|copy_extensions =|g' "${SRC_DIR}/ca.ini"
+    -e 's|#copy_extensions =|copy_extensions =|g' "${SRC_DIR}/${ca_i}.ini"
 
-  _struct 'ca' \
-  && _key 'ca' \
-  && _csr 'ca' 'ca' \
-  && _crt 'ca' 'ca.root.ini' 'v3_ca_intermediate' '3650' \
-  && _verify 'ca.root' 'ca' \
-  && _chain 'ca.root' 'ca' \
-  && _info 'ca'
+  _struct "${ca_i}" \
+  && _key "${ca_i}" \
+  && _csr "${ca_i}" "${ca_i}" \
+  && _crt "${ca_i}" "${ca_r}.ini" 'v3_ca_01' '3650' \
+  && _verify "${ca_r}" "${ca_i}" \
+  && _chain "${ca_r}" "${ca_i}" \
+  && _info "${ca_i}"
 }
 
 "$@"

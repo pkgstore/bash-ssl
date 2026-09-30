@@ -23,6 +23,7 @@ CN="${1:?}"
 SAN="${2:?}"
 DAYS="${3:?}"
 EXT="${4:?}"
+CA='ca.01'
 
 # -------------------------------------------------------------------------------------------------------------------- #
 # -----------------------------------------------------< SCRIPT >----------------------------------------------------- #
@@ -33,27 +34,30 @@ function _title() {
 }
 
 function _key() {
-  openssl ecparam -genkey -name 'secp384r1' | openssl ec -out "${SRC_DIR}/ca/key/${CN}.key"
+  openssl ecparam -genkey -name 'secp384r1' | openssl ec -out "${SRC_DIR}/${CA}/key/${CN}.key"
 }
 
 function _csr() {
-  openssl req -config "${SRC_DIR}/ca.ini" -new -addext "subjectAltName = ${SAN}" \
-    -key "${SRC_DIR}/ca/key/ca.key" \
-    -out "${SRC_DIR}/ca/csr/${CN}.csr"
+  openssl req -config "${SRC_DIR}/${CA}.ini" -new -addext "subjectAltName = ${SAN}" \
+    -key "${SRC_DIR}/${CA}/key/${CA}.key" -out "${SRC_DIR}/${CA}/csr/${CN}.csr"
 }
 
 function _crt() {
-  openssl ca -config "${SRC_DIR}/ca.ini" -days "${DAYS}" -extensions "${EXT}" -notext \
-    -in "${SRC_DIR}/ca/csr/${CN}.csr" \
-    -out "${SRC_DIR}/ca/crt/${CN}.crt"
+  openssl ca -config "${SRC_DIR}/${CA}.ini" -days "${DAYS}" -extensions "${EXT}" -notext \
+    -in "${SRC_DIR}/${CA}/csr/${CN}.csr" -out "${SRC_DIR}/${CA}/crt/${CN}.crt"
 }
 
 function _verify() {
-  openssl verify -CAfile "${SRC_DIR}/ca/crt/ca.chain.crt" "${SRC_DIR}/ca/crt/${CN}.crt"
+  openssl verify -CAfile "${SRC_DIR}/${CA}/crt/${CA}.chain.crt" "${SRC_DIR}/${CA}/crt/${CN}.crt"
 }
 
 function _info() {
-  openssl x509 -in "${SRC_DIR}/ca/crt/${CN}.crt" -text -noout
+  openssl x509 -in "${SRC_DIR}/${CA}/crt/${CN}.crt" -text -noout
+}
+
+function _pkcs() {
+  openssl pkcs12 -export -certpbe PBE-SHA1-3DES -keypbe PBE-SHA1-3DES -nomac \
+    -inkey "${f}.key" -in "${f}.crt" -out "${f}.pfx"
 }
 
 function generator() {
