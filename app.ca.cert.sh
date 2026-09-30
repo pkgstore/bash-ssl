@@ -18,8 +18,11 @@
 # Sources.
 SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd -P )"
 
+# Timestamp.
+TS="$( date '+%s' )"
+
 # Parameters.
-CN="${1:?}"
+CN="${1:?}.${TS}"
 SAN="${2:?}"
 DAYS="${3:?}"
 EXT="${4:?}"
