@@ -18,12 +18,21 @@
 # Sources.
 SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd -P )"
 
+# Colors.
+G='\033[0;32m'
+Y='\033[0;33m'
+NC='\033[0m'
+
 # -------------------------------------------------------------------------------------------------------------------- #
 # -----------------------------------------------------< SCRIPT >----------------------------------------------------- #
 # -------------------------------------------------------------------------------------------------------------------- #
 
 function _title() {
-  echo '' && echo "${1}" && echo ''
+  echo '' && echo "${Y}${1}${NC}" && echo ''
+}
+
+function _success() {
+  echo -e "${G}Successfully completed!${NC}" >&2
 }
 
 function _struct() {
@@ -31,49 +40,58 @@ function _struct() {
   mkdir -p "${SRC_DIR}/${1}"/{crt,crt.new,crl,csr,key} \
     && touch "${SRC_DIR}/${1}/index.txt" \
     && echo '1000' > "${SRC_DIR}/${1}/serial" \
-    && echo '1000' > "${SRC_DIR}/${1}/crlnumber"
+    && echo '1000' > "${SRC_DIR}/${1}/crlnumber" \
+    && _success
 }
 
 function _key() {
-  _title '--- [SSL] GENERATING A PRIVATE KEY'
-  openssl ecparam -genkey -name 'secp384r1' | openssl ec -aes256 -out "${SRC_DIR}/${1}/key/${1}.key"
+  _title "--- [SSL-CA] GENERATING A KEY FILE"
+  openssl ecparam -genkey -name 'secp384r1' | openssl ec -aes256 -out "${SRC_DIR}/${1}/key/${1}.key" && _success
 }
 
 function _csr() {
-  _title '--- [SSL] GENERATING A CERTIFICATE SIGNING REQUEST (CSR)'
+  _title "--- [SSL-CA] GENERATING A CSR FILE"
   openssl req -config "${SRC_DIR}/${1}.ini" -new \
-    -key "${SRC_DIR}/${1}/key/${1}.key" -out "${SRC_DIR}/${1}/csr/${1}.csr"
+    -key "${SRC_DIR}/${1}/key/${1}.key" -out "${SRC_DIR}/${1}/csr/${1}.csr" \
+    && _success
 }
 
 function _crt() {
-  _title '--- [SSL] GENERATING A CERTIFICATE'
+  _title "--- [SSL-CA] GENERATING A CRT FILE"
   case "${1}" in
     'ca.00')
       openssl req -config "${SRC_DIR}/${2}" -extensions "${3}" -new -x509 -days "${4}" \
         -key "${SRC_DIR}/${1}/key/${1}.key" \
-        -out "${SRC_DIR}/${1}/crt/${1}.crt"
+        -out "${SRC_DIR}/${1}/crt/${1}.crt" \
+        && _success
       ;;
     'ca.01')
       openssl ca -config "${SRC_DIR}/${2}" -extensions "${3}" -days "${4}" -notext \
         -in "${SRC_DIR}/${1}/csr/${1}.csr" \
-        -out "${SRC_DIR}/${1}/crt/${1}.crt"
+        -out "${SRC_DIR}/${1}/crt/${1}.crt" \
+        && _success
       ;;
     *) echo "'TYPE' does not exist!"; exit 1 ;;
   esac
 }
 
 function _verify() {
-  openssl verify -CAfile "${SRC_DIR}/${1}/crt/${1}.crt" "${SRC_DIR}/${2}/crt/${2}.crt"
+  _title "--- [SSL-CA] VERIFICATION"
+  openssl verify -CAfile "${SRC_DIR}/${1}/crt/${1}.crt" "${SRC_DIR}/${2}/crt/${2}.crt" \
+    && _success
 }
 
 function _chain() {
-  cat "${SRC_DIR}/${2}/crt/${2}.crt" "${SRC_DIR}/${1}/crt/${1}.crt" \
-    > "${SRC_DIR}/${2}/crt/${2}.chain.crt"
+  _title "--- [SSL-CA] GENERATING A CHAIN FILE"
+  cat "${SRC_DIR}/${2}/crt/${2}.crt" "${SRC_DIR}/${1}/crt/${1}.crt" > "${SRC_DIR}/${2}/crt/${2}.chain.crt" \
+    && _success
 }
 
 function _info() {
+  _title "--- [SSL-CA] INFORMATION"
   openssl x509 -noout -text -in "${SRC_DIR}/${1}/crt/${1}.crt" \
-  && openssl x509 -noout -text -in "${SRC_DIR}/${1}/crt/${1}.crt" > "${SRC_DIR}/${1}/crt/${1}.crt.info"
+    && openssl x509 -noout -text -in "${SRC_DIR}/${1}/crt/${1}.crt" > "${SRC_DIR}/${1}/crt/${1}.crt.info" \
+    && _success
 }
 
 function init_ca_00() {
@@ -212,15 +230,14 @@ extendedKeyUsage                = critical, OCSPSigning
 EOF
 
   _struct "${ca}" \
-  && _key "${ca}" \
-  && _crt "${ca}" "${ca}.ini" 'v3_ca_00' '7310' \
-  && _info "${ca}"
+    && _key "${ca}" \
+    && _crt "${ca}" "${ca}.ini" 'v3_ca_00' '7310' \
+    && _info "${ca}"
 }
 
 function init_ca_01() {
   local ca_r='ca.00'; local ca_i='ca.01'
 
-  _title '--- [SSL-CA] GENERATING A CONFIGURATION FILE'
   cp "${SRC_DIR}/${ca_r}.ini" "${SRC_DIR}/${ca_i}.ini"
   sed -i \
     -e "s|${ca_r}|${ca_i}|g" \
@@ -229,12 +246,12 @@ function init_ca_01() {
     -e 's|#copy_extensions =|copy_extensions =|g' "${SRC_DIR}/${ca_i}.ini"
 
   _struct "${ca_i}" \
-  && _key "${ca_i}" \
-  && _csr "${ca_i}" "${ca_i}" \
-  && _crt "${ca_i}" "${ca_r}.ini" 'v3_ca_01' '3650' \
-  && _verify "${ca_r}" "${ca_i}" \
-  && _chain "${ca_r}" "${ca_i}" \
-  && _info "${ca_i}"
+    && _key "${ca_i}" \
+    && _csr "${ca_i}" "${ca_i}" \
+    && _crt "${ca_i}" "${ca_r}.ini" 'v3_ca_01' '3650' \
+    && _verify "${ca_r}" "${ca_i}" \
+    && _chain "${ca_r}" "${ca_i}" \
+    && _info "${ca_i}"
 }
 
 "$@"

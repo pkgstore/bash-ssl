@@ -45,24 +45,28 @@ function _success() {
 
 function _key() {
   _title "--- [SSL] GENERATING A KEY FILE: '${CN}'"
-  openssl ecparam -genkey -name 'prime256v1' | openssl ec -out "${SRC_DIR}/${CA_I}/key/${CN}.key" && _success
+  openssl ecparam -genkey -name 'prime256v1' | openssl ec -out "${SRC_DIR}/${CA_I}/key/${CN}.key" \
+    && _success
 }
 
 function _csr() {
   _title "--- [SSL] GENERATING A CSR FILE: '${CN}'"
   openssl req -config "${SRC_DIR}/${CA_I}.ini" -new -addext "subjectAltName = ${SAN}" \
-    -key "${SRC_DIR}/${CA_I}/key/${CN}.key" -out "${SRC_DIR}/${CA_I}/csr/${CN}.csr" && _success
+    -key "${SRC_DIR}/${CA_I}/key/${CN}.key" -out "${SRC_DIR}/${CA_I}/csr/${CN}.csr" \
+    && _success
 }
 
 function _crt() {
   _title "--- [SSL] GENERATING A CRT FILE: '${CN}'"
   openssl ca -config "${SRC_DIR}/${CA_I}.ini" -days "${DAYS}" -extensions "${EXT}" -notext \
-    -in "${SRC_DIR}/${CA_I}/csr/${CN}.csr" -out "${SRC_DIR}/${CA_I}/crt/${CN}.crt" && _success
+    -in "${SRC_DIR}/${CA_I}/csr/${CN}.csr" -out "${SRC_DIR}/${CA_I}/crt/${CN}.crt" \
+    && _success
 }
 
 function _verify() {
   _title "--- [SSL] VERIFICATION: '${CN}'"
-  openssl verify -CAfile "${SRC_DIR}/${CA_I}/crt/${CA_I}.chain.crt" "${SRC_DIR}/${CA_I}/crt/${CN}.crt" && _success
+  openssl verify -CAfile "${SRC_DIR}/${CA_I}/crt/${CA_I}.chain.crt" "${SRC_DIR}/${CA_I}/crt/${CN}.crt" \
+    && _success
 }
 
 function _info() {
@@ -79,7 +83,8 @@ function _pkcs() {
     -inkey "${SRC_DIR}/${CA_I}/key/${CN}.key" \
     -in "${SRC_DIR}/${CA_I}/crt/${CN}.crt" \
     -certfile "${SRC_DIR}/${CA_I}/crt/${CA_I}.crt" \
-    -certfile "${SRC_DIR}/${CA_R}/crt/${CA_R}.crt" && _success
+    -certfile "${SRC_DIR}/${CA_R}/crt/${CA_R}.crt" \
+    && _success
 }
 
 function generator() {
