@@ -103,7 +103,7 @@ function _pkcs() {
     && _success
 }
 
-function generator() {
+function cert() {
   _key \
     && _csr \
     && _crt \
@@ -114,5 +114,5 @@ function generator() {
 }
 
 function main() {
-  generator
+  cert
 }; main "$@"

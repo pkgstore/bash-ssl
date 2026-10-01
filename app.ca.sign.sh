@@ -75,7 +75,7 @@ function _info() {
     && _success
 }
 
-function generator() {
+function sign() {
   _crt \
     && _verify \
     && _chain \
@@ -83,5 +83,5 @@ function generator() {
 }
 
 function main() {
-  generator
+  sign
 }; main "$@"
