@@ -179,7 +179,8 @@ EOF
 
 function _struct() {
   _title '--- [SSL-CA] CREATING A STRUCTURE'
-  mkdir -p "${SRC_DIR}/${1}"/{crl,crt,crt.new,csr,key} \
+  local d=('crl' 'crt' 'crt.new' 'csr' 'key' 'pfx')
+  for i in "${d[@]}"; do mkdir -p "${SRC_DIR}/${1}/${i}"; done \
     && chmod 700 "${SRC_DIR}/${1}/key" \
     && touch "${SRC_DIR}/${1}/index.txt" \
     && echo '1000' > "${SRC_DIR}/${1}/serial" \
@@ -238,7 +239,7 @@ function _info() {
     && _success
 }
 
-function init_ca_00() {
+function ca_00() {
   _conf \
     && _struct "${CA_R}" \
     && _key "${CA_R}" \
@@ -246,7 +247,7 @@ function init_ca_00() {
     && _info "${CA_R}"
 }
 
-function init_ca_01() {
+function ca_01() {
   cp "${SRC_DIR}/${CA_R}.ini" "${SRC_DIR}/${CA_I}.ini" \
     && sed -i \
       -e "s|${CA_R}|${CA_I}|g" \

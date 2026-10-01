@@ -49,29 +49,31 @@ function _success() {
 
 function _crt() {
   _title "--- [SSL] GENERATING A CRT FILE: '${CN}'"
+  [[ ! -d "${SRC_DIR}/${CA_I}/crt/${CN}" ]] && mkdir "${SRC_DIR}/${CA_I}/crt/${CN}"
   openssl ca -config "${SRC_DIR}/${CA_I}.ini" -days "${DAYS}" -extensions "${EXT}" -notext \
-    -in "${CSR}" -out "${SRC_DIR}/${CA_I}/crt/${CN}.crt" \
-    && chmod 444 "${SRC_DIR}/${CA_I}/crt/${CN}.crt" \
+    -in "${CSR}" -out "${SRC_DIR}/${CA_I}/crt/${CN}/${CN}.crt" \
+    && chmod 444 "${SRC_DIR}/${CA_I}/crt/${CN}/${CN}.crt" \
     && _success
 }
 
 function _verify() {
   _title "--- [SSL] VERIFICATION: '${CN}'"
-  openssl verify -CAfile "${SRC_DIR}/${CA_I}/crt/${CA_I}.chain.crt" "${SRC_DIR}/${CA_I}/crt/${CN}.crt" \
+  openssl verify -CAfile "${SRC_DIR}/${CA_I}/crt/${CA_I}.chain.crt" "${SRC_DIR}/${CA_I}/crt/${CN}/${CN}.crt" \
     && _success
 }
 
 function _chain() {
   _title "--- [SSL-CA] GENERATING A CHAIN FILE"
-  cat "${SRC_DIR}/${CA_I}/crt/${CN}.crt" "${SRC_DIR}/${CA_I}/crt/${CA_I}.chain.crt" \
-    > "${SRC_DIR}/${CA_I}/crt/${CN}.chain.crt" \
-    && chmod 444 "${SRC_DIR}/${CA_I}/crt/${CN}.chain.crt" \
+  cat "${SRC_DIR}/${CA_I}/crt/${CN}/${CN}.crt" "${SRC_DIR}/${CA_I}/crt/${CA_I}.chain.crt" \
+    > "${SRC_DIR}/${CA_I}/crt/${CN}/${CN}.chain.crt" \
+    && chmod 444 "${SRC_DIR}/${CA_I}/crt/${CN}/${CN}.chain.crt" \
     && _success
 }
 
 function _info() {
   _title "--- [SSL] GENERATING A INFO FILE: '${CN}'"
-  openssl x509 -noout -text -in "${SRC_DIR}/${CA_I}/crt/${CN}.crt" > "${SRC_DIR}/${CA_I}/crt/${CN}.crt.info" \
+  openssl x509 -noout -text -in "${SRC_DIR}/${CA_I}/crt/${CN}/${CN}.crt" \
+    > "${SRC_DIR}/${CA_I}/crt/${CN}/${CN}.crt.info" \
     && _success
 }
 
