@@ -39,68 +39,7 @@ function _success() {
   echo '' && echo -e "${G}SUCCESSFULLY COMPLETED!${NC}" >&2 && echo ''
 }
 
-function _struct() {
-  _title '--- [SSL-CA] CREATING A STRUCTURE'
-  mkdir -p "${SRC_DIR}/${1}"/{crl,crt,crt.new,csr,key} \
-    && chmod 700 "${SRC_DIR}/${1}/key" \
-    && touch "${SRC_DIR}/${1}/index.txt" \
-    && echo '1000' > "${SRC_DIR}/${1}/serial" \
-    && echo '1000' > "${SRC_DIR}/${1}/crlnumber" \
-    && _success
-}
-
-function _key() {
-  _title "--- [SSL-CA] GENERATING A KEY FILE"
-  openssl ecparam -genkey -name 'secp384r1' | openssl ec -aes256 -out "${SRC_DIR}/${1}/key/${1}.key" \
-    && chmod 400 "${SRC_DIR}/${1}/key/${1}.key" \
-    && _success
-}
-
-function _csr() {
-  _title "--- [SSL-CA] GENERATING A CSR FILE"
-  openssl req -config "${SRC_DIR}/${1}.ini" -new \
-    -key "${SRC_DIR}/${1}/key/${1}.key" -out "${SRC_DIR}/${1}/csr/${1}.csr" \
-    && _success
-}
-
-function _crt() {
-  _title "--- [SSL-CA] GENERATING A CRT FILE"
-  case "${1}" in
-    'ca.00')
-      openssl req -config "${SRC_DIR}/${2}" -extensions "${3}" -new -x509 -days "${4}" \
-        -key "${SRC_DIR}/${1}/key/${1}.key" -out "${SRC_DIR}/${1}/crt/${1}.crt" \
-        && _success
-      ;;
-    'ca.01')
-      openssl ca -config "${SRC_DIR}/${2}" -extensions "${3}" -days "${4}" -notext \
-        -in "${SRC_DIR}/${1}/csr/${1}.csr" -out "${SRC_DIR}/${1}/crt/${1}.crt" \
-        && _success
-      ;;
-    *) echo "'TYPE' does not exist!"; exit 1 ;;
-  esac
-  [[ -f "${SRC_DIR}/${1}/crt/${1}.crt" ]] && chmod 444 "${SRC_DIR}/${1}/crt/${1}.crt"
-}
-
-function _verify() {
-  _title "--- [SSL-CA] VERIFICATION"
-  openssl verify -CAfile "${SRC_DIR}/${1}/crt/${1}.crt" "${SRC_DIR}/${2}/crt/${2}.crt" \
-    && _success
-}
-
-function _chain() {
-  _title "--- [SSL-CA] GENERATING A CHAIN FILE"
-  cat "${SRC_DIR}/${2}/crt/${2}.crt" "${SRC_DIR}/${1}/crt/${1}.crt" > "${SRC_DIR}/${2}/crt/${2}.chain.crt" \
-    && chmod 444 "${SRC_DIR}/${2}/crt/${2}.chain.crt" \
-    && _success
-}
-
-function _info() {
-  _title "--- [SSL-CA] GENERATING A INFO FILE"
-  openssl x509 -noout -text -in "${SRC_DIR}/${1}/crt/${1}.crt" > "${SRC_DIR}/${1}/crt/${1}.crt.info" \
-    && _success
-}
-
-function init_ca_00() {
+function _conf() {
   cat > "${SRC_DIR}/${CA_R}.ini" <<EOF
 [ ca ]
 default_ca                      = CA_default
@@ -236,8 +175,72 @@ authorityKeyIdentifier          = keyid,issuer
 keyUsage                        = critical, digitalSignature
 extendedKeyUsage                = critical, OCSPSigning
 EOF
+}
 
-  _struct "${CA_R}" \
+function _struct() {
+  _title '--- [SSL-CA] CREATING A STRUCTURE'
+  mkdir -p "${SRC_DIR}/${1}"/{crl,crt,crt.new,csr,key} \
+    && chmod 700 "${SRC_DIR}/${1}/key" \
+    && touch "${SRC_DIR}/${1}/index.txt" \
+    && echo '1000' > "${SRC_DIR}/${1}/serial" \
+    && echo '1000' > "${SRC_DIR}/${1}/crlnumber" \
+    && _success
+}
+
+function _key() {
+  _title "--- [SSL-CA] GENERATING A KEY FILE"
+  openssl ecparam -genkey -name 'secp384r1' | openssl ec -aes256 -out "${SRC_DIR}/${1}/key/${1}.key" \
+    && chmod 400 "${SRC_DIR}/${1}/key/${1}.key" \
+    && _success
+}
+
+function _csr() {
+  _title "--- [SSL-CA] GENERATING A CSR FILE"
+  openssl req -config "${SRC_DIR}/${1}.ini" -new \
+    -key "${SRC_DIR}/${1}/key/${1}.key" -out "${SRC_DIR}/${1}/csr/${1}.csr" \
+    && _success
+}
+
+function _crt() {
+  _title "--- [SSL-CA] GENERATING A CRT FILE"
+  case "${1}" in
+    'ca.00')
+      openssl req -config "${SRC_DIR}/${2}" -extensions "${3}" -new -x509 -days "${4}" \
+        -key "${SRC_DIR}/${1}/key/${1}.key" -out "${SRC_DIR}/${1}/crt/${1}.crt" \
+        && _success
+      ;;
+    'ca.01')
+      openssl ca -config "${SRC_DIR}/${2}" -extensions "${3}" -days "${4}" -notext \
+        -in "${SRC_DIR}/${1}/csr/${1}.csr" -out "${SRC_DIR}/${1}/crt/${1}.crt" \
+        && _success
+      ;;
+    *) echo "'TYPE' does not exist!"; exit 1 ;;
+  esac
+  [[ -f "${SRC_DIR}/${1}/crt/${1}.crt" ]] && chmod 444 "${SRC_DIR}/${1}/crt/${1}.crt"
+}
+
+function _verify() {
+  _title "--- [SSL-CA] VERIFICATION"
+  openssl verify -CAfile "${SRC_DIR}/${1}/crt/${1}.crt" "${SRC_DIR}/${2}/crt/${2}.crt" \
+    && _success
+}
+
+function _chain() {
+  _title "--- [SSL-CA] GENERATING A CHAIN FILE"
+  cat "${SRC_DIR}/${2}/crt/${2}.crt" "${SRC_DIR}/${1}/crt/${1}.crt" > "${SRC_DIR}/${2}/crt/${2}.chain.crt" \
+    && chmod 444 "${SRC_DIR}/${2}/crt/${2}.chain.crt" \
+    && _success
+}
+
+function _info() {
+  _title "--- [SSL-CA] GENERATING A INFO FILE"
+  openssl x509 -noout -text -in "${SRC_DIR}/${1}/crt/${1}.crt" > "${SRC_DIR}/${1}/crt/${1}.crt.info" \
+    && _success
+}
+
+function init_ca_00() {
+  _conf \
+    && _struct "${CA_R}" \
     && _key "${CA_R}" \
     && _crt "${CA_R}" "${CA_R}.ini" 'v3_ca_00' '7310' \
     && _info "${CA_R}"
