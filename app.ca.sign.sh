@@ -28,7 +28,7 @@ DAYS="${3:?}"
 EXT="${4:?}"
 
 # CA names.
-CA_I='ca.01'
+CA_I='ca.1'
 
 # Colors.
 G='\033[0;32m'

@@ -28,8 +28,8 @@ DAYS="${3:?}"
 EXT="${4:?}"
 
 # CA names.
-CA_R='ca.00'
-CA_I='ca.01'
+CA_R='ca.0'
+CA_I='ca.1'
 
 # Colors.
 G='\033[0;32m'

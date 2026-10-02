@@ -19,8 +19,8 @@
 SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd -P )"
 
 # CA names.
-CA_R='ca.00'
-CA_I='ca.01'
+CA_R='ca.0'
+CA_I='ca.1'
 
 # Colors.
 G='\033[0;32m'
@@ -105,7 +105,7 @@ string_mask                     = utf8only
 default_md                      = sha384
 
 # Extension to add when the -x509 option is used.
-x509_extensions                 = v3_ca_00
+x509_extensions                 = v3_ca_0
 
 [ req_distinguished_name ]
 # See <https://en.wikipedia.org/wiki/Certificate_signing_request>.
@@ -125,14 +125,14 @@ localityName_default            = Victoria
 organizationalUnitName_default  = LocalHost Root CA
 emailAddress_default            = mail@localhost
 
-[ v3_ca_00 ]
+[ v3_ca_0 ]
 # Extensions for a typical CA (\`man x509v3_config\`).
 subjectKeyIdentifier            = hash
 authorityKeyIdentifier          = keyid:always,issuer
 basicConstraints                = critical, CA:true
 keyUsage                        = critical, digitalSignature, cRLSign, keyCertSign
 
-[ v3_ca_01 ]
+[ v3_ca_1 ]
 # Extensions for a typical intermediate CA (\`man x509v3_config\`).
 subjectKeyIdentifier            = hash
 authorityKeyIdentifier          = keyid:always,issuer
@@ -205,12 +205,12 @@ function _csr() {
 function _crt() {
   _title "--- [SSL-CA] GENERATING A CRT FILE"
   case "${1}" in
-    'ca.00')
+    'ca.0')
       openssl req -config "${SRC_DIR}/${2}" -extensions "${3}" -new -x509 -days "${4}" \
         -key "${SRC_DIR}/${1}/key/${1}.key" -out "${SRC_DIR}/${1}/crt/${1}.crt" \
         && _success
       ;;
-    'ca.01')
+    'ca.1')
       openssl ca -config "${SRC_DIR}/${2}" -extensions "${3}" -days "${4}" -notext \
         -in "${SRC_DIR}/${1}/csr/${1}.csr" -out "${SRC_DIR}/${1}/crt/${1}.crt" \
         && _success
@@ -239,15 +239,15 @@ function _info() {
     && _success
 }
 
-function ca_00() {
+function ca_0() {
   _conf \
     && _struct "${CA_R}" \
     && _key "${CA_R}" \
-    && _crt "${CA_R}" "${CA_R}.ini" 'v3_ca_00' '7310' \
+    && _crt "${CA_R}" "${CA_R}.ini" 'v3_ca_0' '7310' \
     && _info "${CA_R}"
 }
 
-function ca_01() {
+function ca_1() {
   cp "${SRC_DIR}/${CA_R}.ini" "${SRC_DIR}/${CA_I}.ini" \
     && sed -i \
       -e "s|${CA_R}|${CA_I}|g" \
@@ -258,7 +258,7 @@ function ca_01() {
   _struct "${CA_I}" \
     && _key "${CA_I}" \
     && _csr "${CA_I}" "${CA_I}" \
-    && _crt "${CA_I}" "${CA_R}.ini" 'v3_ca_01' '3650' \
+    && _crt "${CA_I}" "${CA_R}.ini" 'v3_ca_1' '3650' \
     && _verify "${CA_R}" "${CA_I}" \
     && _chain "${CA_R}" "${CA_I}" \
     && _info "${CA_I}"
