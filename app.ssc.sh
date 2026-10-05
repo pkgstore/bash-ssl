@@ -38,19 +38,19 @@ OU='IT Department'
 CN="${1:?}"
 
 # Your email address.
-EMAIL='mail@example.org'
+EMAIL='mail@localhost'
 
 # Additional subject identities.
-SAN="${2}"; [[ -z "${2}" ]] && SAN="DNS:${CN}, DNS:*.${CN}, DNS:*.localdomain, DNS:*.local, IP:127.0.0.1"
+SAN="${2:?}"
 
 # Key usage extensions.
-KU="${3}"; [[ -z "${3}" ]] && KU='digitalSignature, nonRepudiation, keyEncipherment'
+KU="${3:?}"
 
 # Extended key usage.
-EKU="${4}"; [[ -z "${4}" ]] && EKU='serverAuth, clientAuth'
+EKU="${4:?}"
 
 # Certificate authority.
-CA="${5:-FALSE}"
+CA="${5:?}"
 
 # -------------------------------------------------------------------------------------------------------------------- #
 # -----------------------------------------------------< SCRIPT >----------------------------------------------------- #
@@ -72,8 +72,6 @@ function _csr() {
   openssl req -new -sha256 -key "${CN}.${1}.key" -out "${CN}.csr" \
     -subj "/C=${COUNTRY}/ST=${STATE}/L=${CITY}/O=${ORG}/OU=${OU}/CN=${CN}/emailAddress=${EMAIL}" \
     -addext "basicConstraints = critical, CA:${CA}" \
-    -addext 'nsCertType = server, client' \
-    -addext 'nsComment = OpenSSL Self-Signed Certificate' \
     -addext "keyUsage = critical, ${KU}" \
     -addext "extendedKeyUsage = ${EKU}" \
     -addext "subjectAltName = ${SAN}"
