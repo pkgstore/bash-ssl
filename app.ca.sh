@@ -118,26 +118,27 @@ organizationalUnitName          = Organizational Unit Name
 emailAddress                    = Email Address
 
 # Optionally, specify some defaults.
+commonName_default              = LocalHost Root CA
 countryName_default             = SC
 stateOrProvinceName_default     = Victoria
 localityName_default            = Victoria
 0.organizationName_default      = LocalHost
-organizationalUnitName_default  = LocalHost Root CA
+organizationalUnitName_default  = IT Department
 emailAddress_default            = mail@localhost
 
 [ v3_ca_0 ]
 # Extensions for a typical CA (\`man x509v3_config\`).
 subjectKeyIdentifier            = hash
 authorityKeyIdentifier          = keyid:always,issuer
-basicConstraints                = critical, CA:true
-keyUsage                        = critical, digitalSignature, cRLSign, keyCertSign
+basicConstraints                = critical, CA:true, pathlen:4
+keyUsage                        = critical, digitalSignature, keyCertSign, cRLSign
 
 [ v3_ca_1 ]
 # Extensions for a typical intermediate CA (\`man x509v3_config\`).
 subjectKeyIdentifier            = hash
 authorityKeyIdentifier          = keyid:always,issuer
 basicConstraints                = critical, CA:true, pathlen:0
-keyUsage                        = critical, digitalSignature, cRLSign, keyCertSign
+keyUsage                        = critical, digitalSignature, keyCertSign, cRLSign
 
 [ cert_code ]
 # Extensions for code certificates (\`man x509v3_config\`).
@@ -251,7 +252,7 @@ function ca_1() {
   cp "${SRC_DIR}/${CA_R}.ini" "${SRC_DIR}/${CA_I}.ini" \
     && sed -i \
       -e "s|${CA_R}|${CA_I}|g" \
-      -e 's|Root CA|Intermediate CA|g' \
+      -e 's|Root CA|Sub CA|g' \
       -e 's|= policy_strict|= policy_loose|g' \
       -e 's|#copy_extensions =|copy_extensions =|g' "${SRC_DIR}/${CA_I}.ini"
 
