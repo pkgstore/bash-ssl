@@ -80,7 +80,7 @@ function _verify() {
 }
 
 function _chain() {
-  _title "--- [SSL-CA] GENERATING A CHAIN FILE"
+  _title "--- [SSL-CA] GENERATING A CHAIN FILE: '${CN}'"
   cat "${SRC_DIR}/${CA_I}/crt/${CN}/${CN}.crt" "${SRC_DIR}/${CA_I}/crt/${CA_I}.chain.crt" \
     > "${SRC_DIR}/${CA_I}/crt/${CN}/${CN}.chain.crt" \
     && chmod 444 "${SRC_DIR}/${CA_I}/crt/${CN}/${CN}.chain.crt" \
@@ -107,16 +107,26 @@ function _pkcs() {
     && _success
 }
 
-function cert() {
+function _pkcs_compat() {
+  _title "--- [SSL] GENERATING A PFX FILE (COMPATIBILITY): '${CN}'"
+  [[ ! -d "${SRC_DIR}/${CA_I}/pfx/${CN}" ]] && mkdir "${SRC_DIR}/${CA_I}/pfx/${CN}"
+  openssl pkcs12 -export -certpbe PBE-SHA1-3DES -keypbe PBE-SHA1-3DES -macalg sha1 \
+    -out "${SRC_DIR}/${CA_I}/pfx/${CN}/${CN}.compat.pfx" \
+    -inkey "${SRC_DIR}/${CA_I}/key/${CN}/${CN}.key" \
+    -in "${SRC_DIR}/${CA_I}/crt/${CN}/${CN}.crt" \
+    -certfile "${SRC_DIR}/${CA_I}/crt/${CA_I}.crt" \
+    -certfile "${SRC_DIR}/${CA_R}/crt/${CA_R}.crt" \
+    && chmod 444 "${SRC_DIR}/${CA_I}/pfx/${CN}/${CN}.compat.pfx" \
+    && _success
+}
+
+function main() {
   _key \
     && _csr \
     && _crt \
     && _verify \
     && _chain \
     && _info \
-    && _pkcs
-}
-
-function main() {
-  cert
+    && _pkcs \
+    && _pkcs_compat
 }; main "$@"
