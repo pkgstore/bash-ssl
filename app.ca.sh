@@ -179,7 +179,7 @@ EOF
 }
 
 function _struct() {
-  _title '--- [SSL-CA] CREATING A STRUCTURE'
+  _title "--- [SSL-CA/${1^^}] CREATING A STRUCTURE"
   local d=('crl' 'crt' 'crt.new' 'csr' 'key' 'pfx')
   for i in "${d[@]}"; do mkdir -p "${SRC_DIR}/${1}/${i}"; done \
     && chmod 700 "${SRC_DIR}/${1}/key" \
@@ -190,61 +190,66 @@ function _struct() {
 }
 
 function _key() {
-  _title "--- [SSL-CA] GENERATING A KEY FILE"
+  _title "--- [SSL-CA/${1^^}] GENERATING A KEY FILE"
   openssl ecparam -name 'secp384r1' -genkey -noout | openssl ec -aes256 -out "${SRC_DIR}/${1}/key/${1}.key" \
     && chmod 400 "${SRC_DIR}/${1}/key/${1}.key" \
     && _success
 }
 
 function _csr() {
-  _title "--- [SSL-CA] GENERATING A CSR FILE"
-  openssl req -config "${SRC_DIR}/${1}.ini" -new \
-    -key "${SRC_DIR}/${1}/key/${1}.key" -out "${SRC_DIR}/${1}/csr/${1}.csr" \
+  _title "--- [SSL-CA/${1^^}] GENERATING A CSR FILE"
+  openssl req -config "${SRC_DIR}/${1}" -new \
+    -key "${SRC_DIR}/${2}/key/${2}.key" -out "${SRC_DIR}/${2}/csr/${2}.csr" \
     && _success
 }
 
 function _crt() {
-  _title "--- [SSL-CA] GENERATING A CRT FILE"
-  case "${1}" in
+  _title "--- [SSL-CA/${1^^}] GENERATING A CRT FILE"
+  case "${2}" in
     'ca.0')
-      openssl req -config "${SRC_DIR}/${2}" -extensions "${3}" -new -x509 -days "${4}" \
-        -key "${SRC_DIR}/${1}/key/${1}.key" -out "${SRC_DIR}/${1}/crt/${1}.crt" \
+      openssl req -config "${SRC_DIR}/${1}" -extensions "${3}" -new -x509 -days "${4}" \
+        -key "${SRC_DIR}/${2}/key/${2}.key" -out "${SRC_DIR}/${2}/crt/${2}.crt" \
         && _success
       ;;
     'ca.1')
-      openssl ca -config "${SRC_DIR}/${2}" -extensions "${3}" -days "${4}" -notext \
-        -in "${SRC_DIR}/${1}/csr/${1}.csr" -out "${SRC_DIR}/${1}/crt/${1}.crt" \
+      openssl ca -config "${SRC_DIR}/${1}" -extensions "${3}" -days "${4}" -notext \
+        -in "${SRC_DIR}/${2}/csr/${2}.csr" -out "${SRC_DIR}/${2}/crt/${2}.crt" \
         && _success
       ;;
     *) echo "'TYPE' does not exist!"; exit 1 ;;
   esac
-  [[ -f "${SRC_DIR}/${1}/crt/${1}.crt" ]] && chmod 444 "${SRC_DIR}/${1}/crt/${1}.crt"
+  [[ -f "${SRC_DIR}/${2}/crt/${2}.crt" ]] && chmod 444 "${SRC_DIR}/${2}/crt/${2}.crt"
 }
 
 function _verify() {
-  _title "--- [SSL-CA] VERIFICATION"
+  _title "--- [SSL-CA/${2^^}] VERIFICATION"
   openssl verify -CAfile "${SRC_DIR}/${1}/crt/${1}.crt" "${SRC_DIR}/${2}/crt/${2}.crt" \
     && _success
 }
 
 function _chain() {
-  _title "--- [SSL-CA] GENERATING A CHAIN FILE"
+  _title "--- [SSL-CA/${2^^}] GENERATING A CHAIN FILE"
   cat "${SRC_DIR}/${2}/crt/${2}.crt" "${SRC_DIR}/${1}/crt/${1}.crt" > "${SRC_DIR}/${2}/crt/${2}.chain.crt" \
     && chmod 444 "${SRC_DIR}/${2}/crt/${2}.chain.crt" \
     && _success
 }
 
 function _info() {
-  _title "--- [SSL-CA] GENERATING A INFO FILE"
+  _title "--- [SSL-CA/${1^^}] GENERATING A INFO FILE"
   openssl x509 -noout -text -in "${SRC_DIR}/${1}/crt/${1}.crt" > "${SRC_DIR}/${1}/crt/${1}.crt.info" \
     && _success
+}
+
+function _crl() {
+  _title "--- [SSL-CA/${2^^}] GENERATING A CRL FILE"
+  openssl ca -config "${SRC_DIR}/${1}" -gencrl -out "${SRC_DIR}/${2}/crl/${2}.crl"
 }
 
 function ca_0() {
   _conf \
     && _struct "${CA_R}" \
     && _key "${CA_R}" \
-    && _crt "${CA_R}" "${CA_R}.ini" 'v3_ca_0' '7310' \
+    && _crt "${CA_R}.ini" "${CA_R}" 'v3_ca_0' '7310' \
     && _info "${CA_R}"
 }
 
@@ -258,11 +263,14 @@ function ca_1() {
 
   _struct "${CA_I}" \
     && _key "${CA_I}" \
-    && _csr "${CA_I}" "${CA_I}" \
-    && _crt "${CA_I}" "${CA_R}.ini" 'v3_ca_1' '3650' \
+    && _csr "${CA_I}.ini" "${CA_I}" \
+    && _crt "${CA_R}.ini" "${CA_I}" 'v3_ca_1' '3650' \
     && _verify "${CA_R}" "${CA_I}" \
     && _chain "${CA_R}" "${CA_I}" \
-    && _info "${CA_I}"
+    && _info "${CA_I}" \
+    && _crl "${CA_I}.ini" "${CA_I}"
 }
 
-"$@"
+function main() {
+  ca_0 && ca_1
+}; main "$@"
