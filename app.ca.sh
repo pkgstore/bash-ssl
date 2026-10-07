@@ -191,7 +191,7 @@ function _struct() {
 
 function _key() {
   _title "--- [SSL-CA] GENERATING A KEY FILE"
-  openssl ecparam -genkey -name 'secp384r1' | openssl ec -aes256 -out "${SRC_DIR}/${1}/key/${1}.key" \
+  openssl ecparam -name 'secp384r1' -genkey -noout | openssl ec -aes256 -out "${SRC_DIR}/${1}/key/${1}.key" \
     && chmod 400 "${SRC_DIR}/${1}/key/${1}.key" \
     && _success
 }
