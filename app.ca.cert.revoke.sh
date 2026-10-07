@@ -19,7 +19,6 @@
 SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd -P )"
 
 # CA names.
-CA_R='ca.0'
 CA_I='ca.1'
 
 # Colors.
@@ -33,11 +32,21 @@ CERT="${1}"
 # -----------------------------------------------------< SCRIPT >----------------------------------------------------- #
 # -------------------------------------------------------------------------------------------------------------------- #
 
+function _title() {
+  echo '' && echo -e "${Y}${1}${NC}" && echo ''
+}
+
+function _success() {
+  echo '' && echo -e "${G}SUCCESSFULLY COMPLETED!${NC}" >&2 && echo ''
+}
+
 function _revoke() {
+  _title "--- [SSL] CERTIFICATE REVOCATION: '${CN}'"
   openssl ca -config "${SRC_DIR}/${1}" -revoke "${SRC_DIR}/${2}/crt/${2}.crt"
 }
 
 function _crl() {
+  _title "--- [SSL-CA/${2^^}] GENERATING A CRL FILE"
   openssl ca -config "${SRC_DIR}/${1}" -gencrl -out "${SRC_DIR}/${2}/crl/${2}.crl"
 }
 
