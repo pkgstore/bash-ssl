@@ -197,7 +197,7 @@ function _key() {
 }
 
 function _csr() {
-  _title "--- [SSL-CA/${1^^}] GENERATING A CSR FILE"
+  _title "--- [SSL-CA/${2^^}] GENERATING A CSR FILE"
   openssl req -config "${SRC_DIR}/${1}" -new \
     -key "${SRC_DIR}/${2}/key/${2}.key" -out "${SRC_DIR}/${2}/csr/${2}.csr" \
     && _success
