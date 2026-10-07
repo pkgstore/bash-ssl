@@ -204,7 +204,7 @@ function _csr() {
 }
 
 function _crt() {
-  _title "--- [SSL-CA/${1^^}] GENERATING A CRT FILE"
+  _title "--- [SSL-CA/${2^^}] GENERATING A CRT FILE"
   case "${2}" in
     'ca.0')
       openssl req -config "${SRC_DIR}/${1}" -extensions "${3}" -new -x509 -days "${4}" \
