@@ -6,7 +6,7 @@
 # @author     Kai Kimera <mail@kai.kim>
 # @license    MIT
 # @version    0.1.0
-# @link       https://libsys.ru/ru/2023/10/6733cb51-62a0-5ed9-b421-8f08c4e0cb18/
+# @link       https://libsys.ru/ru/2026/10/bc2ffc50-8d26-5150-bc98-951a81b17bbb/
 # -------------------------------------------------------------------------------------------------------------------- #
 
 (( EUID == 0 )) && { echo >&2 'This script should not be run as root!'; exit 1; }

@@ -6,7 +6,7 @@
 # @author     Kai Kimera <mail@kai.kim>
 # @license    MIT
 # @version    0.1.0
-# @link       https://libsys.ru/ru/2023/10/6733cb51-62a0-5ed9-b421-8f08c4e0cb18/
+# @link       https://libsys.ru/ru/2026/10/bc2ffc50-8d26-5150-bc98-951a81b17bbb/
 # -------------------------------------------------------------------------------------------------------------------- #
 
 (( EUID == 0 )) && { echo >&2 'This script should not be run as root!'; exit 1; }
@@ -41,13 +41,15 @@ function _success() {
 }
 
 function _revoke() {
-  _title "--- [SSL] CERTIFICATE REVOCATION: '${CN}'"
-  openssl ca -config "${SRC_DIR}/${1}" -revoke "${SRC_DIR}/${2}/crt/${2}.crt"
+  local d=('crt' 'csr' 'key' 'pfx')
+  _title "--- [SSL] CERTIFICATE REVOCATION: '${CERT}'"
+  openssl ca -config "${SRC_DIR}/${1}" -revoke "${SRC_DIR}/${CA_I}/crt/${2}/${2}.crt" \
+    && for i in "${d[@]}"; do mv "${SRC_DIR}/${CA_I}/${i}/${2}" "${SRC_DIR}/${CA_I}/${i}/${2}.R"; done
 }
 
 function _crl() {
   _title "--- [SSL-CA/${2^^}] GENERATING A CRL FILE"
-  openssl ca -config "${SRC_DIR}/${1}" -gencrl -out "${SRC_DIR}/${2}/crl/${2}.crl"
+  openssl ca -config "${SRC_DIR}/${1}" -gencrl -out "${SRC_DIR}/${CA_I}/crl/${2}.crl"
 }
 
 function main() {
